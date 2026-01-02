@@ -1,0 +1,156 @@
+{% extends "ui/app_base.html" %}
+{% load static i18n ui component_tags %}
+
+{% block page_title %}{{ schedule.name }}{% endblock %}
+
+{% block page_content %}
+{% ui_page_header title=schedule.name %}
+
+<div class="ion-padding">
+    {# Schedule Info #}
+    {% ui_card css_class="mb-lg" %}
+        <div class="d-flex justify-between align-center mb-md">
+            <div>
+                {% if schedule.is_default %}
+                <ion-badge color="primary">{% trans "Default" %}</ion-badge>
+                {% endif %}
+                {% if not schedule.is_active %}
+                <ion-badge color="medium">{% trans "Inactive" %}</ion-badge>
+                {% endif %}
+            </div>
+            <div class="d-flex gap-sm">
+                <ion-button fill="outline" size="small" href="{% url 'appointments:schedule_edit' schedule.id %}">
+                    <ion-icon slot="start" name="create-outline"></ion-icon>
+                    {% trans "Edit" %}
+                </ion-button>
+            </div>
+        </div>
+        {% if schedule.description %}
+        <p class="text-secondary">{{ schedule.description }}</p>
+        {% endif %}
+    {% endui_card %}
+
+    {# Time Slots by Day #}
+    {% for day_num, day_data in slots_by_day.items %}
+    {% ui_card css_class="mb-md" %}
+        <div class="d-flex justify-between align-center mb-md">
+            <span class="fw-semibold">{{ day_data.name }}</span>
+            <ion-button fill="clear" size="small" onclick="addTimeSlot({{ day_num }}, '{{ day_data.name }}')">
+                <ion-icon slot="start" name="add-outline"></ion-icon>
+                {% trans "Add Slot" %}
+            </ion-button>
+        </div>
+
+        {% if day_data.slots %}
+        {% ui_list lines="full" %}
+            {% for slot in day_data.slots %}
+            <ion-item-sliding>
+                <ion-item>
+                    <ion-icon name="time-outline" slot="start" color="primary"></ion-icon>
+                    <ion-label>
+                        <h2>{{ slot.start_time|time:"H:i" }} - {{ slot.end_time|time:"H:i" }}</h2>
+                        <p>{{ slot.duration_minutes }} {% trans "minutes" %}</p>
+                    </ion-label>
+                    {% if not slot.is_active %}
+                    <ion-badge slot="end" color="medium">{% trans "Inactive" %}</ion-badge>
+                    {% endif %}
+                </ion-item>
+                <ion-item-options side="end">
+                    <ion-item-option color="danger" onclick="deleteTimeSlot({{ slot.id }})">
+                        <ion-icon slot="icon-only" name="trash-outline"></ion-icon>
+                    </ion-item-option>
+                </ion-item-options>
+            </ion-item-sliding>
+            {% endfor %}
+        {% endui_list %}
+        {% else %}
+        <p class="text-secondary text-center py-md">{% trans "No time slots defined for this day" %}</p>
+        {% endif %}
+    {% endui_card %}
+    {% endfor %}
+</div>
+
+<script>
+function addTimeSlot(dayOfWeek, dayName) {
+    const alert = document.createElement('ion-alert');
+    alert.header = '{% trans "Add Time Slot" %} - ' + dayName;
+    alert.inputs = [
+        {
+            name: 'start_time',
+            type: 'time',
+            placeholder: '{% trans "Start Time" %}',
+            value: '09:00'
+        },
+        {
+            name: 'end_time',
+            type: 'time',
+            placeholder: '{% trans "End Time" %}',
+            value: '17:00'
+        }
+    ];
+    alert.buttons = [
+        { text: '{% trans "Cancel" %}', role: 'cancel' },
+        {
+            text: '{% trans "Add" %}',
+            handler: async (data) => {
+                try {
+                    const response = await fetch('{% url "appointments:add_time_slot" schedule.id %}', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            day_of_week: dayOfWeek,
+                            start_time: data.start_time,
+                            end_time: data.end_time
+                        })
+                    });
+                    const result = await response.json();
+                    if (result.success) {
+                        Alpine.store('ui').success('{% trans "Time slot added" %}');
+                        location.reload();
+                    } else {
+                        Alpine.store('ui').error(result.error);
+                    }
+                } catch (e) {
+                    Alpine.store('ui').error('{% trans "Error adding time slot" %}');
+                }
+            }
+        }
+    ];
+    document.body.appendChild(alert);
+    alert.present();
+}
+
+async function deleteTimeSlot(slotId) {
+    const alert = document.createElement('ion-alert');
+    alert.header = '{% trans "Delete Time Slot" %}';
+    alert.message = '{% trans "Are you sure you want to delete this time slot?" %}';
+    alert.buttons = [
+        { text: '{% trans "Cancel" %}', role: 'cancel' },
+        {
+            text: '{% trans "Delete" %}',
+            handler: async () => {
+                try {
+                    const response = await fetch(`/modules/appointments/schedules/slots/${slotId}/delete/`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' }
+                    });
+                    const result = await response.json();
+                    if (result.success) {
+                        Alpine.store('ui').success('{% trans "Time slot deleted" %}');
+                        location.reload();
+                    } else {
+                        Alpine.store('ui').error(result.error);
+                    }
+                } catch (e) {
+                    Alpine.store('ui').error('{% trans "Error deleting time slot" %}');
+                }
+            }
+        }
+    ];
+    document.body.appendChild(alert);
+    alert.present();
+}
+</script>
+
+{% component "tabbar" module_id="appointments" current_view="schedules" %}{% endcomponent %}
+{% endblock %}

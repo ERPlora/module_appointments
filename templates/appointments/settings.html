@@ -1,0 +1,209 @@
+{% extends "ui/module_content.html" %}
+{% load static i18n ui %}
+
+{% block content %}
+{# Booking Settings #}
+{% ui_card css_class="mb-lg" %}
+    <div class="fw-semibold fs-lg mb-md">{% trans "Booking Settings" %}</div>
+
+    <ion-list lines="none">
+        <ion-item>
+            <ion-label>
+                <h2>{% trans "Default Duration" %}</h2>
+                <p>{% trans "Default appointment duration in minutes" %}</p>
+            </ion-label>
+            <ion-input
+                type="number"
+                value="{{ config.default_duration }}"
+                slot="end"
+                style="max-width: 100px; text-align: right;"
+                hx-post="{% url 'appointments:settings_save' %}"
+                hx-trigger="change"
+                hx-vals='{"default_duration": this.value}'
+            ></ion-input>
+        </ion-item>
+
+        <ion-item>
+            <ion-label>
+                <h2>{% trans "Minimum Booking Notice" %}</h2>
+                <p>{% trans "Minutes in advance required for booking" %}</p>
+            </ion-label>
+            <ion-input
+                type="number"
+                value="{{ config.min_booking_notice }}"
+                slot="end"
+                style="max-width: 100px; text-align: right;"
+                hx-post="{% url 'appointments:settings_save' %}"
+                hx-trigger="change"
+                hx-vals='{"min_booking_notice": this.value}'
+            ></ion-input>
+        </ion-item>
+
+        <ion-item>
+            <ion-label>
+                <h2>{% trans "Maximum Advance Booking" %}</h2>
+                <p>{% trans "Days in advance appointments can be booked" %}</p>
+            </ion-label>
+            <ion-input
+                type="number"
+                value="{{ config.max_advance_booking }}"
+                slot="end"
+                style="max-width: 100px; text-align: right;"
+                hx-post="{% url 'appointments:settings_save' %}"
+                hx-trigger="change"
+                hx-vals='{"max_advance_booking": this.value}'
+            ></ion-input>
+        </ion-item>
+
+        <ion-item>
+            <ion-label>
+                <h2>{% trans "Allow Overlapping" %}</h2>
+                <p>{% trans "Allow overlapping appointments for the same staff" %}</p>
+            </ion-label>
+            <ion-toggle
+                slot="end"
+                {% if config.allow_overlapping %}checked{% endif %}
+                hx-post="{% url 'appointments:settings_toggle' %}"
+                hx-trigger="ionChange"
+                hx-vals='{"field": "allow_overlapping"}'
+            ></ion-toggle>
+        </ion-item>
+    </ion-list>
+{% endui_card %}
+
+{# Reminder Settings #}
+{% ui_card css_class="mb-lg" %}
+    <div class="fw-semibold fs-lg mb-md">{% trans "Reminder Settings" %}</div>
+
+    <ion-list lines="none">
+        <ion-item>
+            <ion-label>
+                <h2>{% trans "Send Reminders" %}</h2>
+                <p>{% trans "Send reminder notifications to customers" %}</p>
+            </ion-label>
+            <ion-toggle
+                slot="end"
+                {% if config.send_reminders %}checked{% endif %}
+                hx-post="{% url 'appointments:settings_toggle' %}"
+                hx-trigger="ionChange"
+                hx-vals='{"field": "send_reminders"}'
+            ></ion-toggle>
+        </ion-item>
+
+        <ion-item>
+            <ion-label>
+                <h2>{% trans "Reminder Hours Before" %}</h2>
+                <p>{% trans "Hours before appointment to send reminder" %}</p>
+            </ion-label>
+            <ion-input
+                type="number"
+                value="{{ config.reminder_hours_before }}"
+                slot="end"
+                style="max-width: 100px; text-align: right;"
+                hx-post="{% url 'appointments:settings_save' %}"
+                hx-trigger="change"
+                hx-vals='{"reminder_hours_before": this.value}'
+            ></ion-input>
+        </ion-item>
+    </ion-list>
+{% endui_card %}
+
+{# Cancellation Settings #}
+{% ui_card css_class="mb-lg" %}
+    <div class="fw-semibold fs-lg mb-md">{% trans "Cancellation Settings" %}</div>
+
+    <ion-list lines="none">
+        <ion-item>
+            <ion-label>
+                <h2>{% trans "Allow Customer Cancellation" %}</h2>
+                <p>{% trans "Allow customers to cancel their appointments" %}</p>
+            </ion-label>
+            <ion-toggle
+                slot="end"
+                {% if config.allow_customer_cancellation %}checked{% endif %}
+                hx-post="{% url 'appointments:settings_toggle' %}"
+                hx-trigger="ionChange"
+                hx-vals='{"field": "allow_customer_cancellation"}'
+            ></ion-toggle>
+        </ion-item>
+
+        <ion-item>
+            <ion-label>
+                <h2>{% trans "Cancellation Notice Hours" %}</h2>
+                <p>{% trans "Minimum hours notice for cancellation" %}</p>
+            </ion-label>
+            <ion-input
+                type="number"
+                value="{{ config.cancellation_notice_hours }}"
+                slot="end"
+                style="max-width: 100px; text-align: right;"
+                hx-post="{% url 'appointments:settings_save' %}"
+                hx-trigger="change"
+                hx-vals='{"cancellation_notice_hours": this.value}'
+            ></ion-input>
+        </ion-item>
+    </ion-list>
+{% endui_card %}
+
+{# Calendar Settings #}
+{% ui_card %}
+    <div class="fw-semibold fs-lg mb-md">{% trans "Calendar Display" %}</div>
+
+    <ion-list lines="none">
+        <ion-item>
+            <ion-label>
+                <h2>{% trans "Calendar Start Hour" %}</h2>
+                <p>{% trans "First hour shown in calendar" %}</p>
+            </ion-label>
+            <ion-input
+                type="number"
+                min="0"
+                max="23"
+                value="{{ config.calendar_start_hour }}"
+                slot="end"
+                style="max-width: 100px; text-align: right;"
+                hx-post="{% url 'appointments:settings_save' %}"
+                hx-trigger="change"
+                hx-vals='{"calendar_start_hour": this.value}'
+            ></ion-input>
+        </ion-item>
+
+        <ion-item>
+            <ion-label>
+                <h2>{% trans "Calendar End Hour" %}</h2>
+                <p>{% trans "Last hour shown in calendar" %}</p>
+            </ion-label>
+            <ion-input
+                type="number"
+                min="0"
+                max="24"
+                value="{{ config.calendar_end_hour }}"
+                slot="end"
+                style="max-width: 100px; text-align: right;"
+                hx-post="{% url 'appointments:settings_save' %}"
+                hx-trigger="change"
+                hx-vals='{"calendar_end_hour": this.value}'
+            ></ion-input>
+        </ion-item>
+
+        <ion-item>
+            <ion-label>
+                <h2>{% trans "Time Slot Interval" %}</h2>
+                <p>{% trans "Minutes between available slots" %}</p>
+            </ion-label>
+            <ion-input
+                type="number"
+                min="5"
+                max="60"
+                step="5"
+                value="{{ config.slot_interval }}"
+                slot="end"
+                style="max-width: 100px; text-align: right;"
+                hx-post="{% url 'appointments:settings_save' %}"
+                hx-trigger="change"
+                hx-vals='{"slot_interval": this.value}'
+            ></ion-input>
+        </ion-item>
+    </ion-list>
+{% endui_card %}
+{% endblock %}

@@ -1,0 +1,156 @@
+{% extends "ui/module_content.html" %}
+{% load static i18n ui %}
+
+{% block header_actions %}
+<ion-button size="default" href="{% url 'appointments:appointment_create' %}" title="{% trans 'New Appointment' %}">
+    <ion-icon slot="icon-only" name="add-outline"></ion-icon>
+</ion-button>
+{% endblock %}
+
+{% block content %}
+{# Filter Bar #}
+<div class="filter-bar mb-md">
+    <ion-searchbar
+        type="text"
+        name="search"
+        value="{{ search }}"
+        placeholder="{% trans 'Search appointments...' %}"
+        hx-get="{% url 'appointments:appointments_list' %}"
+        hx-target="#appointments-list"
+        hx-trigger="input changed delay:300ms, search"
+        hx-include="[name='status'],[name='date']"
+    ></ion-searchbar>
+</div>
+
+<div class="d-flex gap-sm mb-md">
+    <ion-select
+        name="status"
+        value="{{ status_filter }}"
+        placeholder="{% trans 'All Statuses' %}"
+        interface="popover"
+        hx-get="{% url 'appointments:appointments_list' %}"
+        hx-target="#appointments-list"
+        hx-trigger="ionChange"
+        hx-include="[name='search'],[name='date']"
+    >
+        <ion-select-option value="">{% trans "All Statuses" %}</ion-select-option>
+        {% for value, label in status_choices %}
+        <ion-select-option value="{{ value }}">{{ label }}</ion-select-option>
+        {% endfor %}
+    </ion-select>
+
+    <ion-input
+        type="date"
+        name="date"
+        value="{{ date_filter }}"
+        hx-get="{% url 'appointments:appointments_list' %}"
+        hx-target="#appointments-list"
+        hx-trigger="change"
+        hx-include="[name='search'],[name='status']"
+    ></ion-input>
+</div>
+
+{# Appointments List #}
+<ion-card class="m-0">
+    <ion-card-content class="p-0">
+        <div id="appointments-list">
+            {% if appointments %}
+            {% ui_list lines="full" %}
+                {% for appointment in appointments %}
+                <ion-item-sliding>
+                    <ion-item href="{% url 'appointments:appointment_detail' appointment.id %}" detail>
+                        <div slot="start" class="d-flex flex-column align-center p-xs rounded" style="background: var(--bg-color-secondary); min-width: 50px;">
+                            <span class="fs-xs text-secondary">{{ appointment.start_datetime|date:"D" }}</span>
+                            <span class="fw-bold">{{ appointment.start_datetime|date:"d" }}</span>
+                            <span class="fs-xs">{{ appointment.start_datetime|time:"H:i" }}</span>
+                        </div>
+                        <ion-label class="ml-sm">
+                            <h2>{{ appointment.customer_name }}</h2>
+                            <p>{{ appointment.service_name }}</p>
+                            <p class="fs-xs text-secondary">{{ appointment.appointment_number }}</p>
+                        </ion-label>
+                        <ion-badge slot="end" color="{% if appointment.status == 'confirmed' %}primary{% elif appointment.status == 'pending' %}warning{% elif appointment.status == 'completed' %}success{% elif appointment.status == 'cancelled' %}medium{% elif appointment.status == 'no_show' %}danger{% else %}medium{% endif %}">
+                            {{ appointment.get_status_display }}
+                        </ion-badge>
+                    </ion-item>
+                    <ion-item-options side="end">
+                        {% if appointment.status == 'pending' %}
+                        <ion-item-option color="success" onclick="confirmAppointment({{ appointment.id }})">
+                            <ion-icon slot="icon-only" name="checkmark-outline"></ion-icon>
+                        </ion-item-option>
+                        {% endif %}
+                        {% if appointment.can_cancel %}
+                        <ion-item-option color="danger" onclick="cancelAppointment({{ appointment.id }})">
+                            <ion-icon slot="icon-only" name="close-outline"></ion-icon>
+                        </ion-item-option>
+                        {% endif %}
+                    </ion-item-options>
+                </ion-item-sliding>
+                {% endfor %}
+            {% endui_list %}
+            {% else %}
+            {% ui_empty_state title=_("No appointments found") icon="calendar-outline" description=_("Create your first appointment or adjust your filters") %}
+            {% endif %}
+        </div>
+    </ion-card-content>
+</ion-card>
+
+<script>
+async function confirmAppointment(id) {
+    try {
+        const response = await fetch(`/modules/appointments/appointments/${id}/confirm/`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' }
+        });
+        const data = await response.json();
+        if (data.success) {
+            Alpine.store('ui').success('{% trans "Appointment confirmed" %}');
+            location.reload();
+        } else {
+            Alpine.store('ui').error(data.error);
+        }
+    } catch (e) {
+        Alpine.store('ui').error('{% trans "Error confirming appointment" %}');
+    }
+}
+
+async function cancelAppointment(id) {
+    const alert = document.createElement('ion-alert');
+    alert.header = '{% trans "Cancel Appointment" %}';
+    alert.message = '{% trans "Are you sure you want to cancel this appointment?" %}';
+    alert.inputs = [
+        {
+            name: 'reason',
+            type: 'textarea',
+            placeholder: '{% trans "Cancellation reason (optional)" %}'
+        }
+    ];
+    alert.buttons = [
+        { text: '{% trans "No" %}', role: 'cancel' },
+        {
+            text: '{% trans "Yes, Cancel" %}',
+            handler: async (data) => {
+                try {
+                    const response = await fetch(`/modules/appointments/appointments/${id}/cancel/`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ reason: data.reason })
+                    });
+                    const result = await response.json();
+                    if (result.success) {
+                        Alpine.store('ui').success('{% trans "Appointment cancelled" %}');
+                        location.reload();
+                    } else {
+                        Alpine.store('ui').error(result.error);
+                    }
+                } catch (e) {
+                    Alpine.store('ui').error('{% trans "Error cancelling appointment" %}');
+                }
+            }
+        }
+    ];
+    document.body.appendChild(alert);
+    await alert.present();
+}
+</script>
+{% endblock %}

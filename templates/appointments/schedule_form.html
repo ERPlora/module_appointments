@@ -1,0 +1,120 @@
+{% extends "ui/app_base.html" %}
+{% load static i18n ui component_tags %}
+
+{% block page_title %}
+    {% if mode == 'create' %}{% trans "New Schedule" %}
+    {% else %}{% trans "Edit Schedule" %}{% endif %}
+{% endblock %}
+
+{% block page_content %}
+{% if mode == 'create' %}
+{% ui_page_header title=_("New Schedule") %}
+{% else %}
+{% ui_page_header title=_("Edit Schedule") %}
+{% endif %}
+
+<div class="ion-padding">
+    {% ui_card %}
+        <form id="scheduleForm" method="post">
+            {% csrf_token %}
+
+            <ion-item>
+                <ion-input
+                    label="{% trans 'Schedule Name' %} *"
+                    label-placement="floating"
+                    name="name"
+                    value="{% if schedule %}{{ schedule.name }}{% endif %}"
+                    placeholder="{% trans 'Enter schedule name' %}"
+                    required>
+                </ion-input>
+            </ion-item>
+
+            <ion-item class="mt-sm">
+                <ion-textarea
+                    label="{% trans 'Description' %}"
+                    label-placement="floating"
+                    name="description"
+                    rows="3"
+                    placeholder="{% trans 'Optional description' %}">{% if schedule %}{{ schedule.description }}{% endif %}</ion-textarea>
+            </ion-item>
+
+            <ion-item class="mt-sm">
+                <ion-label>{% trans "Set as Default" %}</ion-label>
+                <ion-toggle
+                    name="is_default"
+                    slot="end"
+                    {% if schedule.is_default %}checked{% endif %}>
+                </ion-toggle>
+            </ion-item>
+
+            {% if mode == 'edit' %}
+            <ion-item class="mt-sm">
+                <ion-label>{% trans "Active" %}</ion-label>
+                <ion-toggle
+                    name="is_active"
+                    slot="end"
+                    {% if schedule.is_active %}checked{% endif %}>
+                </ion-toggle>
+            </ion-item>
+            {% endif %}
+
+            <div class="mt-lg">
+                <ion-button type="submit" expand="block" id="submitBtn">
+                    <ion-icon slot="start" name="save-outline"></ion-icon>
+                    {% if mode == 'create' %}{% trans "Create Schedule" %}
+                    {% else %}{% trans "Save Changes" %}{% endif %}
+                </ion-button>
+            </div>
+        </form>
+    {% endui_card %}
+</div>
+
+<script>
+document.getElementById('scheduleForm').addEventListener('submit', async function(e) {
+    e.preventDefault();
+
+    const form = e.target;
+    const submitBtn = document.getElementById('submitBtn');
+    submitBtn.disabled = true;
+
+    const formData = new FormData(form);
+    const data = {
+        name: formData.get('name'),
+        description: formData.get('description'),
+        is_default: form.querySelector('[name="is_default"]').checked,
+        {% if mode == 'edit' %}
+        is_active: form.querySelector('[name="is_active"]').checked
+        {% endif %}
+    };
+
+    try {
+        const url = {% if mode == 'edit' %}'{% url "appointments:schedule_edit" schedule.id %}'{% else %}'{% url "appointments:schedule_create" %}'{% endif %};
+        const response = await fetch(url, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data)
+        });
+
+        const result = await response.json();
+
+        if (result.success) {
+            Alpine.store('ui').success('{% trans "Schedule saved successfully" %}');
+            {% if mode == 'edit' %}
+            window.location.href = '/modules/appointments/schedules/{{ schedule.id }}/';
+            {% else %}
+            window.location.href = '/modules/appointments/schedules/' + result.schedule_id + '/';
+            {% endif %}
+        } else {
+            Alpine.store('ui').error(result.error || '{% trans "Error saving schedule" %}');
+            submitBtn.disabled = false;
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        Alpine.store('ui').error('{% trans "Error saving schedule" %}');
+        submitBtn.disabled = false;
+    }
+});
+</script>
+
+{% component "tabbar" module_id="appointments" current_view="schedules" %}{% endcomponent %}
+{% endblock %}
