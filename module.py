@@ -11,7 +11,16 @@ MODULE_ID = "appointments"
 MODULE_NAME = _("Appointments")
 MODULE_ICON = "calendar-outline"
 MODULE_VERSION = "1.0.0"
-MODULE_CATEGORY = "services"
+MODULE_CATEGORY = "pos"  # Changed from "services" to valid category
+
+# Target Industries (business verticals this module is designed for)
+MODULE_INDUSTRIES = [
+    "salon",        # Beauty & wellness (peluquerías, spas)
+    "healthcare",   # Healthcare (clinics, medical)
+    "fitness",      # Fitness & sports (gyms)
+    "professional", # Professional services (consulting)
+    "education",    # Education (tutoring, academies)
+]
 
 # Sidebar Menu Configuration
 MENU = {
