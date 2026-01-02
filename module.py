@@ -15,10 +15,10 @@ MODULE_CATEGORY = "pos"  # Changed from "services" to valid category
 
 # Target Industries (business verticals this module is designed for)
 MODULE_INDUSTRIES = [
-    "salon",        # Beauty & wellness (peluquerías, spas)
+    "beauty",       # Beauty & wellness (peluquerías, spas)
     "healthcare",   # Healthcare (clinics, medical)
     "fitness",      # Fitness & sports (gyms)
-    "professional", # Professional services (consulting)
+    "consulting",   # Professional services (consulting)
     "education",    # Education (tutoring, academies)
 ]
 
