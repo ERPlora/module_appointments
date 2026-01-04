@@ -1,9 +1,9 @@
 {% extends "ui/module_content.html" %}
-{% load static i18n ui %}
+{% load static i18n djicons ui %}
 
 {% block header_actions %}
 <ion-button size="default" href="{% url 'appointments:schedule_create' %}" title="{% trans 'New Schedule' %}">
-    <ion-icon slot="icon-only" name="add-outline"></ion-icon>
+    {% icon "add-outline" %}
 </ion-button>
 {% endblock %}
 
@@ -12,7 +12,7 @@
 {% ui_list lines="full" %}
     {% for schedule in schedules %}
     <ion-item href="{% url 'appointments:schedule_detail' schedule.id %}" detail>
-        <ion-icon name="time-outline" slot="start" color="{% if schedule.is_active %}primary{% else %}medium{% endif %}"></ion-icon>
+        {% icon "time-outline" css_class="text-{% if schedule.is_active %}primary{% else %}medium{% endif %}" %}
         <ion-label>
             <h2>{{ schedule.name }}</h2>
             <p>{{ schedule.time_slots.count }} {% trans "time slots" %}</p>
@@ -32,7 +32,7 @@
 
 <ion-fab vertical="bottom" horizontal="end" slot="fixed">
     <ion-fab-button href="{% url 'appointments:schedule_create' %}">
-        <ion-icon name="add"></ion-icon>
+        {% icon "add" %}
     </ion-fab-button>
 </ion-fab>
 {% endblock %}

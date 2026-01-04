@@ -1,5 +1,5 @@
 {% extends "ui/app_base.html" %}
-{% load static i18n ui component_tags %}
+{% load static i18n djicons ui component_tags %}
 
 {% block page_title %}{% trans "Blocked Times" %}{% endblock %}
 
@@ -13,7 +13,7 @@
             {% for blocked in blocked_times %}
             <ion-item-sliding>
                 <ion-item>
-                    <ion-icon name="{% if blocked.block_type == 'holiday' %}calendar{% elif blocked.block_type == 'vacation' %}airplane{% elif blocked.block_type == 'break' %}cafe{% elif blocked.block_type == 'maintenance' %}build{% else %}close-circle{% endif %}-outline" slot="start" color="danger"></ion-icon>
+                    {% icon "{% if blocked.block_type == 'holiday' %}calendar{% elif blocked.block_type == 'vacation' %}airplane{% elif blocked.block_type == 'break' %}cafe{% elif blocked.block_type == 'maintenance' %}build{% else %}close-circle{% endif %}-outline" css_class="text-danger" %}
                     <ion-label>
                         <h2>{{ blocked.title }}</h2>
                         <p>{{ blocked.start_datetime|date:"d M Y H:i" }} - {{ blocked.end_datetime|date:"d M Y H:i" }}</p>
@@ -27,7 +27,7 @@
                 </ion-item>
                 <ion-item-options side="end">
                     <ion-item-option color="danger" onclick="deleteBlocked({{ blocked.id }})">
-                        <ion-icon slot="icon-only" name="trash-outline"></ion-icon>
+                        {% icon "trash-outline" %}
                     </ion-item-option>
                 </ion-item-options>
             </ion-item-sliding>
@@ -41,7 +41,7 @@
 
 <ion-fab vertical="bottom" horizontal="end" slot="fixed">
     <ion-fab-button href="{% url 'appointments:blocked_time_create' %}">
-        <ion-icon name="add"></ion-icon>
+        {% icon "add" %}
     </ion-fab-button>
 </ion-fab>
 

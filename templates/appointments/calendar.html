@@ -1,13 +1,13 @@
 {% extends "ui/module_content.html" %}
-{% load static i18n ui %}
+{% load static i18n djicons ui %}
 
 {% block header_actions %}
 <ion-button size="default" fill="outline" href="{% url 'appointments:blocked_times_list' %}" title="{% trans 'Blocked Times' %}">
-    <ion-icon slot="icon-only" name="close-circle-outline"></ion-icon>
+    {% icon "close-circle-outline" %}
 </ion-button>
 
 <ion-button size="default" href="{% url 'appointments:appointment_create' %}" title="{% trans 'New Appointment' %}">
-    <ion-icon slot="icon-only" name="add-outline"></ion-icon>
+    {% icon "add-outline" %}
 </ion-button>
 {% endblock %}
 
@@ -123,11 +123,11 @@
     <div class="calendar-header">
         <div class="calendar-nav">
             <ion-button fill="clear" size="small" @click="prevPeriod">
-                <ion-icon slot="icon-only" name="chevron-back-outline"></ion-icon>
+                {% icon "chevron-back-outline" %}
             </ion-button>
             <span class="calendar-title" x-text="currentTitle"></span>
             <ion-button fill="clear" size="small" @click="nextPeriod">
-                <ion-icon slot="icon-only" name="chevron-forward-outline"></ion-icon>
+                {% icon "chevron-forward-outline" %}
             </ion-button>
         </div>
         <div class="d-flex gap-sm">

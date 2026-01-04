@@ -11,7 +11,7 @@ MODULE_ID = "appointments"
 MODULE_NAME = _("Appointments")
 MODULE_ICON = "calendar-outline"
 MODULE_VERSION = "1.0.0"
-MODULE_CATEGORY = "pos"  # Changed from "services" to valid category
+MODULE_CATEGORY = "pos"
 
 # Target Industries (business verticals this module is designed for)
 MODULE_INDUSTRIES = [
@@ -76,12 +76,53 @@ SETTINGS = {
     "send_reminders": True,
 }
 
-# Permissions
+# Permissions - tuple format (action_suffix, display_name)
+# Results in permission codenames like "appointments.view_appointment"
 PERMISSIONS = [
-    "appointments.view_appointment",
-    "appointments.add_appointment",
-    "appointments.change_appointment",
-    "appointments.delete_appointment",
-    "appointments.view_schedule",
-    "appointments.manage_schedule",
+    ("view_appointment", _("Can view appointments")),
+    ("add_appointment", _("Can add appointments")),
+    ("change_appointment", _("Can change appointments")),
+    ("delete_appointment", _("Can delete appointments")),
+    ("confirm_appointment", _("Can confirm appointments")),
+    ("cancel_appointment", _("Can cancel appointments")),
+    ("complete_appointment", _("Can complete appointments")),
+    ("reschedule_appointment", _("Can reschedule appointments")),
+    ("view_schedule", _("Can view schedules")),
+    ("manage_schedule", _("Can manage schedules")),
+    ("view_blocked_time", _("Can view blocked times")),
+    ("manage_blocked_time", _("Can manage blocked times")),
+    ("view_recurring", _("Can view recurring appointments")),
+    ("manage_recurring", _("Can manage recurring appointments")),
+    ("view_settings", _("Can view settings")),
+    ("change_settings", _("Can change settings")),
 ]
+
+# Role-based permission assignments
+ROLE_PERMISSIONS = {
+    "admin": ["*"],  # All permissions
+    "manager": [
+        "view_appointment",
+        "add_appointment",
+        "change_appointment",
+        "delete_appointment",
+        "confirm_appointment",
+        "cancel_appointment",
+        "complete_appointment",
+        "reschedule_appointment",
+        "view_schedule",
+        "manage_schedule",
+        "view_blocked_time",
+        "manage_blocked_time",
+        "view_recurring",
+        "manage_recurring",
+        "view_settings",
+    ],
+    "employee": [
+        "view_appointment",
+        "add_appointment",
+        "confirm_appointment",
+        "complete_appointment",
+        "view_schedule",
+        "view_blocked_time",
+    ],
+}

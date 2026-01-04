@@ -1,9 +1,9 @@
 {% extends "ui/module_content.html" %}
-{% load static i18n ui %}
+{% load static i18n djicons ui %}
 
 {% block header_actions %}
 <ion-button size="default" href="{% url 'appointments:appointment_create' %}" title="{% trans 'New Appointment' %}">
-    <ion-icon slot="icon-only" name="add-outline"></ion-icon>
+    {% icon "add-outline" %}
 </ion-button>
 {% endblock %}
 
@@ -76,12 +76,12 @@
                     <ion-item-options side="end">
                         {% if appointment.status == 'pending' %}
                         <ion-item-option color="success" onclick="confirmAppointment({{ appointment.id }})">
-                            <ion-icon slot="icon-only" name="checkmark-outline"></ion-icon>
+                            {% icon "checkmark-outline" %}
                         </ion-item-option>
                         {% endif %}
                         {% if appointment.can_cancel %}
                         <ion-item-option color="danger" onclick="cancelAppointment({{ appointment.id }})">
-                            <ion-icon slot="icon-only" name="close-outline"></ion-icon>
+                            {% icon "close-outline" %}
                         </ion-item-option>
                         {% endif %}
                     </ion-item-options>

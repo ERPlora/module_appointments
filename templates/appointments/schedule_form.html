@@ -1,5 +1,5 @@
 {% extends "ui/app_base.html" %}
-{% load static i18n ui component_tags %}
+{% load static i18n djicons ui component_tags %}
 
 {% block page_title %}
     {% if mode == 'create' %}{% trans "New Schedule" %}
@@ -60,7 +60,7 @@
 
             <div class="mt-lg">
                 <ion-button type="submit" expand="block" id="submitBtn">
-                    <ion-icon slot="start" name="save-outline"></ion-icon>
+                    {% icon "save-outline" %}
                     {% if mode == 'create' %}{% trans "Create Schedule" %}
                     {% else %}{% trans "Save Changes" %}{% endif %}
                 </ion-button>

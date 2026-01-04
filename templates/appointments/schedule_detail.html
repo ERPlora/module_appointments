@@ -1,5 +1,5 @@
 {% extends "ui/app_base.html" %}
-{% load static i18n ui component_tags %}
+{% load static i18n djicons ui component_tags %}
 
 {% block page_title %}{{ schedule.name }}{% endblock %}
 
@@ -20,7 +20,7 @@
             </div>
             <div class="d-flex gap-sm">
                 <ion-button fill="outline" size="small" href="{% url 'appointments:schedule_edit' schedule.id %}">
-                    <ion-icon slot="start" name="create-outline"></ion-icon>
+                    {% icon "create-outline" %}
                     {% trans "Edit" %}
                 </ion-button>
             </div>
@@ -36,7 +36,7 @@
         <div class="d-flex justify-between align-center mb-md">
             <span class="fw-semibold">{{ day_data.name }}</span>
             <ion-button fill="clear" size="small" onclick="addTimeSlot({{ day_num }}, '{{ day_data.name }}')">
-                <ion-icon slot="start" name="add-outline"></ion-icon>
+                {% icon "add-outline" %}
                 {% trans "Add Slot" %}
             </ion-button>
         </div>
@@ -46,7 +46,7 @@
             {% for slot in day_data.slots %}
             <ion-item-sliding>
                 <ion-item>
-                    <ion-icon name="time-outline" slot="start" color="primary"></ion-icon>
+                    {% icon "time-outline" css_class="text-primary" %}
                     <ion-label>
                         <h2>{{ slot.start_time|time:"H:i" }} - {{ slot.end_time|time:"H:i" }}</h2>
                         <p>{{ slot.duration_minutes }} {% trans "minutes" %}</p>
@@ -57,7 +57,7 @@
                 </ion-item>
                 <ion-item-options side="end">
                     <ion-item-option color="danger" onclick="deleteTimeSlot({{ slot.id }})">
-                        <ion-icon slot="icon-only" name="trash-outline"></ion-icon>
+                        {% icon "trash-outline" %}
                     </ion-item-option>
                 </ion-item-options>
             </ion-item-sliding>

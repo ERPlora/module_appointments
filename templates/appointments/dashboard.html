@@ -1,5 +1,5 @@
 {% extends "ui/module_content.html" %}
-{% load static i18n ui %}
+{% load static i18n djicons ui %}
 
 {% block content %}
 {# Stats Cards Grid #}
@@ -14,7 +14,7 @@
 {% ui_card css_class="mb-lg" %}
     <div class="d-flex justify-between align-center mb-md">
         <div class="d-flex align-center gap-sm">
-            <ion-icon name="today-outline" color="primary"></ion-icon>
+            {% icon "today-outline" css_class="text-primary" %}
             <span class="fw-semibold fs-lg">{% trans "Today's Appointments" %}</span>
         </div>
         {% ui_button label=_("View Calendar") fill="clear" size="small" icon="calendar-outline" icon_slot="end" hx_get="/modules/appointments/calendar/" hx_target="#main-content-area" hx_push_url=True %}
@@ -24,7 +24,7 @@
     {% ui_list lines="full" %}
         {% for appointment in today_appointments %}
         <ion-item href="{% url 'appointments:appointment_detail' appointment.id %}" detail>
-            <ion-icon name="person-circle-outline" slot="start" color="primary"></ion-icon>
+            {% icon "person-circle-outline" css_class="text-primary" %}
             <ion-label>
                 <h2>{{ appointment.customer_name }}</h2>
                 <p>{{ appointment.service_name }} - {{ appointment.start_datetime|time:"H:i" }}</p>
@@ -44,7 +44,7 @@
 {% ui_card css_class="mb-lg" %}
     <div class="d-flex justify-between align-center mb-md">
         <div class="d-flex align-center gap-sm">
-            <ion-icon name="arrow-forward-outline" color="primary"></ion-icon>
+            {% icon "arrow-forward-outline" css_class="text-primary" %}
             <span class="fw-semibold">{% trans "Upcoming Appointments" %}</span>
         </div>
         {% ui_button label=_("View All") fill="clear" size="small" icon="list-outline" icon_slot="end" hx_get="/modules/appointments/appointments/" hx_target="#main-content-area" hx_push_url=True %}

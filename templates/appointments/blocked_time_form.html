@@ -1,5 +1,5 @@
 {% extends "ui/app_base.html" %}
-{% load static i18n ui component_tags %}
+{% load static i18n djicons ui component_tags %}
 
 {% block page_title %}{% trans "Block Time" %}{% endblock %}
 
@@ -72,7 +72,7 @@
 
             <div class="mt-lg">
                 <ion-button type="submit" expand="block" id="submitBtn">
-                    <ion-icon slot="start" name="close-circle-outline"></ion-icon>
+                    {% icon "close-circle-outline" %}
                     {% trans "Block Time" %}
                 </ion-button>
             </div>

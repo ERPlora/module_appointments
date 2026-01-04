@@ -1,5 +1,5 @@
 {% extends "ui/app_base.html" %}
-{% load static i18n ui component_tags %}
+{% load static i18n djicons ui component_tags %}
 
 {% block page_title %}{{ appointment.appointment_number }}{% endblock %}
 
@@ -18,35 +18,35 @@
             <div class="d-flex gap-sm">
                 {% if appointment.status == 'pending' %}
                 <ion-button fill="outline" color="success" onclick="confirmAppointment()">
-                    <ion-icon slot="start" name="checkmark-outline"></ion-icon>
+                    {% icon "checkmark-outline" %}
                     {% trans "Confirm" %}
                 </ion-button>
                 {% endif %}
 
                 {% if appointment.status == 'confirmed' %}
                 <ion-button fill="outline" color="primary" onclick="startAppointment()">
-                    <ion-icon slot="start" name="play-outline"></ion-icon>
+                    {% icon "play-outline" %}
                     {% trans "Start" %}
                 </ion-button>
                 {% endif %}
 
                 {% if appointment.status == 'in_progress' %}
                 <ion-button color="success" onclick="completeAppointment()">
-                    <ion-icon slot="start" name="checkmark-circle-outline"></ion-icon>
+                    {% icon "checkmark-circle-outline" %}
                     {% trans "Complete" %}
                 </ion-button>
                 {% endif %}
 
                 {% if appointment.can_cancel %}
                 <ion-button fill="outline" color="danger" onclick="cancelAppointment()">
-                    <ion-icon slot="start" name="close-outline"></ion-icon>
+                    {% icon "close-outline" %}
                     {% trans "Cancel" %}
                 </ion-button>
                 {% endif %}
 
                 {% if appointment.is_past and appointment.status in 'pending,confirmed' %}
                 <ion-button fill="outline" color="warning" onclick="markNoShow()">
-                    <ion-icon slot="start" name="person-remove-outline"></ion-icon>
+                    {% icon "person-remove-outline" %}
                     {% trans "No Show" %}
                 </ion-button>
                 {% endif %}
@@ -140,7 +140,7 @@
         {% ui_list lines="full" %}
             {% for entry in history %}
             <ion-item>
-                <ion-icon name="{% if entry.action == 'created' %}add-circle-outline{% elif entry.action == 'confirmed' %}checkmark-circle-outline{% elif entry.action == 'cancelled' %}close-circle-outline{% elif entry.action == 'completed' %}checkmark-done-outline{% elif entry.action == 'rescheduled' %}calendar-outline{% else %}ellipse-outline{% endif %}" slot="start" color="{% if entry.action == 'cancelled' or entry.action == 'no_show' %}danger{% elif entry.action == 'completed' %}success{% else %}primary{% endif %}"></ion-icon>
+                {% icon "{% if entry.action == 'created' %}add-circle-outline{% elif entry.action == 'confirmed' %}checkmark-circle-outline{% elif entry.action == 'cancelled' %}close-circle-outline{% elif entry.action == 'completed' %}checkmark-done-outline{% elif entry.action == 'rescheduled' %}calendar-outline{% else %}ellipse-outline{% endif %}" css_class="text-{% if entry.action == 'cancelled' or entry.action == 'no_show' %}danger{% elif entry.action == 'completed' %}success{% else %}primary{% endif %}" %}
                 <ion-label>
                     <h3>{{ entry.get_action_display }}</h3>
                     <p>{{ entry.description }}</p>
@@ -156,7 +156,7 @@
     {% if appointment.status in 'pending,confirmed' %}
     <div class="mt-lg">
         <ion-button expand="block" fill="outline" href="{% url 'appointments:appointment_edit' appointment.id %}">
-            <ion-icon slot="start" name="create-outline"></ion-icon>
+            {% icon "create-outline" %}
             {% trans "Edit Appointment" %}
         </ion-button>
     </div>
