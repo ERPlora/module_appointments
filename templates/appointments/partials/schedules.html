@@ -1,0 +1,80 @@
+{% load i18n djicons %}
+
+<div class="p-4">
+    <div class="flex justify-end mb-4">
+        <button type="button" class="btn color-primary" onclick="addSchedule()">
+            {% icon "add-outline" css_class="mr-2" %}
+            {% trans "New Schedule" %}
+        </button>
+    </div>
+
+    <!-- Schedules List -->
+    <div class="card">
+        <div class="card-body p-0">
+            {% if schedules %}
+            <div class="list">
+                {% for schedule in schedules %}
+                <a hx-get="{% url 'appointments:schedule_detail' schedule.id %}"
+                   hx-target="#main-content-area"
+                   hx-push-url="true"
+                   class="list-item list-item-clickable">
+                    <div class="list-item-start">
+                        <div class="w-10 h-10 rounded-xl bg-{% if schedule.is_active %}primary{% else %}medium{% endif %}/10 flex items-center justify-center">
+                            {% icon "time-outline" css_class="text-xl text-{% if schedule.is_active %}primary{% else %}muted{% endif %}" %}
+                        </div>
+                    </div>
+                    <div class="list-item-content">
+                        <div class="list-item-label">{{ schedule.name }}</div>
+                        <div class="list-item-note">
+                            {{ schedule.time_slots.count }} {% trans "time slots" %}
+                            {% if schedule.description %} &middot; {{ schedule.description|truncatechars:40 }}{% endif %}
+                        </div>
+                    </div>
+                    <div class="list-item-end flex items-center gap-2">
+                        {% if schedule.is_default %}
+                        <span class="badge color-primary badge-sm">{% trans "Default" %}</span>
+                        {% endif %}
+                        {% if not schedule.is_active %}
+                        <span class="badge  badge-sm">{% trans "Inactive" %}</span>
+                        {% endif %}
+                        {% icon "chevron-forward-outline" css_class="text-muted" %}
+                    </div>
+                </a>
+                {% endfor %}
+            </div>
+            {% else %}
+            <div class="text-center py-12 text-muted">
+                {% icon "time-outline" css_class="text-5xl block mx-auto mb-2" %}
+                <p class="mt-2">{% trans "No schedules created" %}</p>
+                <p class="text-sm">{% trans "Create your first schedule to define working hours" %}</p>
+                <button class="btn btn-sm color-primary mt-3" onclick="addSchedule()">
+                    {% trans "Create Schedule" %}
+                </button>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<script>
+function addSchedule() {
+    const name = prompt('{% trans "Schedule name:" %}');
+    if (!name) return;
+
+    fetch('{% url "appointments:schedule_add" %}', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token }}' },
+        body: JSON.stringify({ name: name })
+    })
+    .then(r => r.json())
+    .then(data => {
+        if (data.success) {
+            Alpine.store('ui').success('{% trans "Schedule created" %}');
+            htmx.ajax('GET', '{% url "appointments:schedules" %}', {target: '#main-content-area', swap: 'innerHTML'});
+        } else {
+            Alpine.store('ui').error(data.error || '{% trans "Error creating schedule" %}');
+        }
+    })
+    .catch(() => Alpine.store('ui').error('{% trans "Error creating schedule" %}'));
+}
+</script>

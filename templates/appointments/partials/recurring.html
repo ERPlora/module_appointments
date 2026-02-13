@@ -1,0 +1,59 @@
+{% load i18n djicons %}
+
+<div class="p-4">
+    <div class="flex justify-end mb-4">
+        <button type="button" class="btn color-primary" onclick="addRecurring()">
+            {% icon "add-outline" css_class="mr-2" %}
+            {% trans "New Recurring" %}
+        </button>
+    </div>
+
+    <!-- Recurring List -->
+    <div class="card">
+        <div class="card-body p-0">
+            {% if recurring_appointments %}
+            <div class="list">
+                {% for recurring in recurring_appointments %}
+                <a hx-get="{% url 'appointments:recurring_detail' recurring.id %}"
+                   hx-target="#main-content-area"
+                   hx-push-url="true"
+                   class="list-item list-item-clickable">
+                    <div class="list-item-start">
+                        <div class="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
+                            {% icon "repeat-outline" css_class="text-xl text-primary" %}
+                        </div>
+                    </div>
+                    <div class="list-item-content">
+                        <div class="list-item-label">{{ recurring.customer_name }}</div>
+                        <div class="list-item-note">
+                            {{ recurring.service_name }} &middot; {{ recurring.get_frequency_display }} &middot; {{ recurring.time|time:"H:i" }}
+                            {% if recurring.staff_name %} &middot; {{ recurring.staff_name }}{% endif %}
+                        </div>
+                    </div>
+                    <div class="list-item-end flex items-center gap-2">
+                        <span class="badge color-primary badge-sm">{{ recurring.get_frequency_display }}</span>
+                        {% icon "chevron-forward-outline" css_class="text-muted" %}
+                    </div>
+                </a>
+                {% endfor %}
+            </div>
+            {% else %}
+            <div class="text-center py-12 text-muted">
+                {% icon "repeat-outline" css_class="text-5xl block mx-auto mb-2" %}
+                <p class="mt-2">{% trans "No recurring appointments" %}</p>
+                <p class="text-sm">{% trans "Set up recurring appointments for regular customers" %}</p>
+                <button class="btn btn-sm color-primary mt-3" onclick="addRecurring()">
+                    {% trans "Create Recurring" %}
+                </button>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<script>
+function addRecurring() {
+    htmx.ajax('GET', '{% url "appointments:recurring_add" %}', {target: '#main-content-area', swap: 'innerHTML'});
+    history.pushState({}, '', '{% url "appointments:recurring_add" %}');
+}
+</script>

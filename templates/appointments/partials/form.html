@@ -1,0 +1,170 @@
+{% load i18n djicons %}
+
+<div class="p-4">
+    <!-- Back Button -->
+    <button class="btn btn-ghost btn-sm mb-4"
+        hx-get="{% if mode == 'edit' %}{% url 'appointments:detail' appointment.id %}{% else %}{% url 'appointments:list' %}{% endif %}"
+        hx-target="#main-content-area"
+        hx-push-url="true">
+        {% icon "arrow-back-outline" css_class="mr-1" %}
+        {% if mode == 'edit' %}{% trans "Back to Appointment" %}{% else %}{% trans "Back to List" %}{% endif %}
+    </button>
+
+    <form id="appointmentForm" method="post" class="space-y-4">
+        {% csrf_token %}
+
+        <!-- Customer Information -->
+        <div class="card">
+            <div class="card-header">
+                <h3 class="card-title">{% icon "person-outline" css_class="text-primary" %} {% trans "Customer Information" %}</h3>
+            </div>
+            <div class="card-body space-y-4">
+                <div>
+                    <label class="block text-sm font-medium mb-1">{% trans "Customer Name" %} *</label>
+                    <input type="text" class="input w-full" name="customer_name"
+                        value="{% if appointment %}{{ appointment.customer_name }}{% endif %}"
+                        placeholder="{% trans 'Enter customer name' %}" required>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium mb-1">{% trans "Phone" %}</label>
+                        <input type="tel" class="input w-full" name="customer_phone"
+                            value="{% if appointment %}{{ appointment.customer_phone }}{% endif %}"
+                            placeholder="{% trans 'Phone number' %}">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium mb-1">{% trans "Email" %}</label>
+                        <input type="email" class="input w-full" name="customer_email"
+                            value="{% if appointment %}{{ appointment.customer_email }}{% endif %}"
+                            placeholder="{% trans 'Email address' %}">
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Service -->
+        <div class="card">
+            <div class="card-header">
+                <h3 class="card-title">{% icon "briefcase-outline" css_class="text-success" %} {% trans "Service" %}</h3>
+            </div>
+            <div class="card-body space-y-4">
+                <div>
+                    <label class="block text-sm font-medium mb-1">{% trans "Service Name" %} *</label>
+                    <input type="text" class="input w-full" name="service_name"
+                        value="{% if appointment %}{{ appointment.service_name }}{% endif %}"
+                        placeholder="{% trans 'Enter service name' %}" required>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium mb-1">{% trans "Price" %}</label>
+                        <input type="number" class="input w-full" name="service_price" step="0.01" min="0"
+                            value="{% if appointment %}{{ appointment.service_price }}{% else %}0{% endif %}"
+                            placeholder="0.00">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium mb-1">{% trans "Staff" %}</label>
+                        <input type="text" class="input w-full" name="staff_name"
+                            value="{% if appointment %}{{ appointment.staff_name }}{% endif %}"
+                            placeholder="{% trans 'Assigned staff member' %}">
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Date & Time -->
+        <div class="card">
+            <div class="card-header">
+                <h3 class="card-title">{% icon "calendar-outline" css_class="text-warning" %} {% trans "Date & Time" %}</h3>
+            </div>
+            <div class="card-body space-y-4">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium mb-1">{% trans "Date & Time" %} *</label>
+                        <input type="datetime-local" class="input w-full" name="start_datetime"
+                            value="{% if appointment %}{{ appointment.start_datetime|date:'Y-m-d' }}T{{ appointment.start_datetime|time:'H:i' }}{% endif %}" required>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium mb-1">{% trans "Duration (minutes)" %} *</label>
+                        <input type="number" class="input w-full" name="duration_minutes" min="15" step="15"
+                            value="{% if appointment %}{{ appointment.duration_minutes }}{% elif settings %}{{ settings.default_duration }}{% else %}60{% endif %}" required>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Notes -->
+        <div class="card">
+            <div class="card-header">
+                <h3 class="card-title">{% icon "document-text-outline" css_class="text-muted" %} {% trans "Notes" %}</h3>
+            </div>
+            <div class="card-body space-y-4">
+                <div>
+                    <label class="block text-sm font-medium mb-1">{% trans "Customer Notes" %}</label>
+                    <textarea class="textarea w-full" name="notes" rows="3"
+                        placeholder="{% trans 'Notes visible to customer' %}">{% if appointment %}{{ appointment.notes }}{% endif %}</textarea>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium mb-1">{% trans "Internal Notes" %}</label>
+                    <textarea class="textarea w-full" name="internal_notes" rows="3"
+                        placeholder="{% trans 'Internal notes (not visible to customer)' %}">{% if appointment %}{{ appointment.internal_notes }}{% endif %}</textarea>
+                </div>
+            </div>
+        </div>
+
+        <!-- Submit -->
+        <button type="submit" class="btn color-primary w-full" id="submitBtn">
+            {% icon "save-outline" css_class="mr-2" %}
+            {% if mode == 'create' %}{% trans "Create Appointment" %}{% else %}{% trans "Save Changes" %}{% endif %}
+        </button>
+    </form>
+</div>
+
+<script>
+document.getElementById('appointmentForm').addEventListener('submit', async function(e) {
+    e.preventDefault();
+
+    const form = e.target;
+    const submitBtn = document.getElementById('submitBtn');
+    submitBtn.disabled = true;
+
+    const formData = new FormData(form);
+    const data = Object.fromEntries(formData.entries());
+
+    try {
+        const url = {% if mode == 'edit' %}'{% url "appointments:edit" appointment.id %}'{% else %}'{% url "appointments:create" %}'{% endif %};
+        const response = await fetch(url, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token }}' },
+            body: JSON.stringify(data)
+        });
+
+        const result = await response.json();
+
+        if (result.success) {
+            Alpine.store('ui').success('{% trans "Appointment saved successfully" %}');
+            {% if mode == 'edit' %}
+            htmx.ajax('GET', '{% url "appointments:detail" appointment.id %}', {target: '#main-content-area', swap: 'innerHTML'});
+            history.pushState({}, '', '{% url "appointments:detail" appointment.id %}');
+            {% else %}
+            htmx.ajax('GET', '/m/appointments/' + result.id + '/', {target: '#main-content-area', swap: 'innerHTML'});
+            history.pushState({}, '', '/m/appointments/' + result.id + '/');
+            {% endif %}
+        } else {
+            if (result.errors) {
+                let errorMsg = '';
+                for (const [field, msgs] of Object.entries(result.errors)) {
+                    errorMsg += field + ': ' + msgs.join(', ') + '\n';
+                }
+                Alpine.store('ui').error(errorMsg || '{% trans "Error saving appointment" %}');
+            } else {
+                Alpine.store('ui').error(result.error || '{% trans "Error saving appointment" %}');
+            }
+            submitBtn.disabled = false;
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        Alpine.store('ui').error('{% trans "Error saving appointment" %}');
+        submitBtn.disabled = false;
+    }
+});
+</script>

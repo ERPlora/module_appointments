@@ -1,0 +1,81 @@
+{% load i18n djicons %}
+
+<div class="p-4">
+    <button class="btn btn-ghost btn-sm mb-4"
+        hx-get="{% url 'appointments:calendar' %}"
+        hx-target="#main-content-area"
+        hx-push-url="true">
+        {% icon "arrow-back-outline" css_class="mr-1" %}
+        {% trans "Back to Calendar" %}
+    </button>
+
+    <div class="card mb-4">
+        <div class="card-header">
+            <h3 class="card-title">{% icon "search-outline" css_class="text-primary" %} {% trans "Search Available Slots" %}</h3>
+        </div>
+        <div class="card-body">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div>
+                    <label class="block text-sm font-medium mb-1">{% trans "Date" %}</label>
+                    <input type="date" class="input w-full" id="availability-date">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium mb-1">{% trans "Duration (minutes)" %}</label>
+                    <input type="number" class="input w-full" id="availability-duration" value="{{ settings.default_duration }}" min="15" step="15">
+                </div>
+                <div class="flex items-end">
+                    <button type="button" class="btn color-primary w-full" onclick="checkSlots()">
+                        {% icon "search-outline" css_class="mr-2" %}
+                        {% trans "Check Availability" %}
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-header">
+            <h3 class="card-title">{% icon "time-outline" css_class="text-success" %} {% trans "Available Slots" %}</h3>
+        </div>
+        <div class="card-body" id="availability-results">
+            <div class="text-center py-8 text-muted">
+                {% icon "calendar-outline" css_class="text-4xl block mx-auto mb-2" %}
+                <p>{% trans "Select a date and click Check Availability to see open slots" %}</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+async function checkSlots() {
+    const date = document.getElementById('availability-date').value;
+    const duration = document.getElementById('availability-duration').value;
+    const resultsDiv = document.getElementById('availability-results');
+
+    if (!date) {
+        Alpine.store('ui').error('{% trans "Please select a date" %}');
+        return;
+    }
+
+    resultsDiv.innerHTML = '<div class="text-center py-8 text-muted"><p>{% trans "Checking..." %}</p></div>';
+
+    try {
+        const response = await fetch(`{% url 'appointments:available_slots' %}?date=${date}&duration=${duration}`);
+        const data = await response.json();
+
+        if (data.slots && data.slots.length > 0) {
+            let html = '<div class="flex flex-wrap gap-2">';
+            data.slots.forEach(slot => {
+                html += `<button type="button" class="btn btn-sm btn-outline" style="min-width: 110px;">${slot.start} - ${slot.end}</button>`;
+            });
+            html += '</div>';
+            html += `<p class="text-sm text-muted mt-3">${data.slots.length} {% trans "slots available" %}</p>`;
+            resultsDiv.innerHTML = html;
+        } else {
+            resultsDiv.innerHTML = '<div class="text-center py-8 text-muted"><p>{% trans "No available slots for this date" %}</p><p class="text-sm mt-1">{% trans "Try a different date or shorter duration" %}</p></div>';
+        }
+    } catch (e) {
+        Alpine.store('ui').error('{% trans "Error checking availability" %}');
+    }
+}
+</script>

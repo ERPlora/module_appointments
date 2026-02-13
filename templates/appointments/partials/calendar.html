@@ -1,0 +1,223 @@
+{% load i18n djicons %}
+
+<script>
+function calendarApp() {
+    return {
+        viewMode: 'day',
+        currentDate: new Date(),
+        events: [],
+        hours: Array.from({length: {{ calendar_end_hour }} - {{ calendar_start_hour }}}, (_, i) => i + {{ calendar_start_hour }}),
+
+        get currentTitle() {
+            const options = this.viewMode === 'day'
+                ? { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }
+                : { year: 'numeric', month: 'long' };
+            return this.currentDate.toLocaleDateString('{{ request.LANGUAGE_CODE }}', options);
+        },
+
+        get weekDays() {
+            const days = [];
+            const start = new Date(this.currentDate);
+            start.setDate(start.getDate() - start.getDay() + 1);
+            for (let i = 0; i < 7; i++) {
+                const d = new Date(start);
+                d.setDate(start.getDate() + i);
+                days.push({
+                    date: d.toISOString().split('T')[0],
+                    name: d.toLocaleDateString('{{ request.LANGUAGE_CODE }}', { weekday: 'short' }),
+                    number: d.getDate()
+                });
+            }
+            return days;
+        },
+
+        init() { this.fetchEvents(); },
+
+        async fetchEvents() {
+            const start = this.getStartDate();
+            const end = this.getEndDate();
+            const response = await fetch(`{% url 'appointments:calendar_data' %}?start=${start}&end=${end}`);
+            const data = await response.json();
+            this.events = data.events;
+        },
+
+        getStartDate() {
+            if (this.viewMode === 'day') return this.currentDate.toISOString().split('T')[0];
+            const start = new Date(this.currentDate);
+            start.setDate(start.getDate() - start.getDay() + 1);
+            return start.toISOString().split('T')[0];
+        },
+
+        getEndDate() {
+            if (this.viewMode === 'day') return this.currentDate.toISOString().split('T')[0];
+            const end = new Date(this.currentDate);
+            end.setDate(end.getDate() - end.getDay() + 7);
+            return end.toISOString().split('T')[0];
+        },
+
+        formatHour(hour) { return `${hour.toString().padStart(2, '0')}:00`; },
+
+        getEventsForHour(hour) {
+            const dateStr = this.currentDate.toISOString().split('T')[0];
+            return this.events.filter(e => {
+                const eventDate = e.start.split('T')[0];
+                const eventHour = parseInt(e.start.split('T')[1].split(':')[0]);
+                return eventDate === dateStr && eventHour === hour;
+            });
+        },
+
+        getEventsForDayHour(dateStr, hour) {
+            return this.events.filter(e => {
+                const eventDate = e.start.split('T')[0];
+                const eventHour = parseInt(e.start.split('T')[1].split(':')[0]);
+                return eventDate === dateStr && eventHour === hour;
+            });
+        },
+
+        prevPeriod() {
+            this.currentDate.setDate(this.currentDate.getDate() - (this.viewMode === 'day' ? 1 : 7));
+            this.currentDate = new Date(this.currentDate);
+            this.fetchEvents();
+        },
+
+        nextPeriod() {
+            this.currentDate.setDate(this.currentDate.getDate() + (this.viewMode === 'day' ? 1 : 7));
+            this.currentDate = new Date(this.currentDate);
+            this.fetchEvents();
+        },
+
+        goToToday() { this.currentDate = new Date(); this.fetchEvents(); },
+
+        openAppointment(id) {
+            htmx.ajax('GET', `/m/appointments/${id}/`, {target: '#main-content-area', swap: 'innerHTML'});
+            history.pushState({}, '', `/m/appointments/${id}/`);
+        }
+    };
+}
+</script>
+
+<style>
+.calendar-container {
+    background: var(--card-bg, var(--color-base-200));
+    border-radius: 12px;
+    padding: 1rem;
+    min-height: 600px;
+}
+.calendar-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; padding-bottom: 1rem; border-bottom: 1px solid var(--color-base-300); }
+.calendar-nav { display: flex; gap: 0.5rem; align-items: center; }
+.calendar-title { font-size: 1.25rem; font-weight: 600; }
+.calendar-grid { display: grid; grid-template-columns: 60px repeat(7, 1fr); gap: 1px; background: var(--color-base-300); border-radius: 8px; overflow: hidden; }
+.calendar-cell { background: var(--card-bg, var(--color-base-200)); padding: 0.5rem; min-height: 80px; }
+.calendar-header-cell { background: var(--color-base-200); padding: 0.5rem; text-align: center; font-weight: 600; font-size: 0.875rem; }
+.calendar-time-cell { background: var(--color-base-200); padding: 0.25rem; text-align: right; font-size: 0.75rem; color: var(--color-base-content, var(--color-base-content)); }
+.calendar-event { color: white; padding: 0.25rem 0.5rem; border-radius: 6px; font-size: 0.75rem; margin-bottom: 2px; cursor: pointer; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; transition: opacity 0.15s; }
+.calendar-event:hover { opacity: 0.85; }
+.calendar-event--pending { background: var(--color-warning); color: #000; }
+.calendar-event--confirmed { background: var(--color-primary); }
+.calendar-event--in_progress { background: #8B5CF6; }
+.calendar-event--completed { background: var(--color-success); }
+.calendar-event--cancelled { background: var(--color-base-content); }
+.calendar-event--no_show { background: var(--color-error); }
+.day-view-container { display: grid; grid-template-columns: 60px 1fr; }
+.time-slot { display: flex; border-bottom: 1px solid var(--color-base-300); min-height: 60px; }
+.time-label { width: 60px; padding: 0.25rem; text-align: right; font-size: 0.75rem; color: var(--color-base-content, var(--color-base-content)); background: var(--color-base-200); flex-shrink: 0; }
+.slot-content { flex: 1; padding: 0.25rem; position: relative; }
+</style>
+
+<div class="p-4">
+    <div class="flex justify-end gap-2 mb-4">
+        <button class="btn btn-sm btn-outline"
+            hx-get="{% url 'appointments:availability' %}"
+            hx-target="#main-content-area"
+            hx-push-url="true">
+            {% icon "search-outline" css_class="mr-1" %}
+            {% trans "Check Availability" %}
+        </button>
+        <button class="btn btn-sm btn-outline"
+            hx-get="{% url 'appointments:blocked_list' %}"
+            hx-target="#main-content-area"
+            hx-push-url="true">
+            {% icon "close-circle-outline" css_class="mr-1" %}
+            {% trans "Blocked Times" %}
+        </button>
+        <button class="btn btn-sm color-primary"
+            hx-get="{% url 'appointments:create' %}"
+            hx-target="#main-content-area"
+            hx-push-url="true">
+            {% icon "add-outline" css_class="mr-1" %}
+            {% trans "New Appointment" %}
+        </button>
+    </div>
+
+    <div class="calendar-container" x-data="calendarApp()">
+        <div class="calendar-header">
+            <div class="calendar-nav">
+                <button type="button" class="btn btn-ghost btn-sm" @click="prevPeriod">
+                    {% icon "chevron-back-outline" %}
+                </button>
+                <span class="calendar-title" x-text="currentTitle"></span>
+                <button type="button" class="btn btn-ghost btn-sm" @click="nextPeriod">
+                    {% icon "chevron-forward-outline" %}
+                </button>
+            </div>
+            <div class="flex gap-2 items-center">
+                <button type="button" class="btn btn-ghost btn-sm" @click="goToToday">{% trans "Today" %}</button>
+                <div class="flex">
+                    <button type="button" class="btn btn-sm" :class="viewMode === 'day' ? 'color-primary' : 'btn-outline'" @click="viewMode = 'day'; fetchEvents()" style="border-radius: 8px 0 0 8px;">
+                        {% trans "Day" %}
+                    </button>
+                    <button type="button" class="btn btn-sm" :class="viewMode === 'week' ? 'color-primary' : 'btn-outline'" @click="viewMode = 'week'; fetchEvents()" style="border-radius: 0 8px 8px 0;">
+                        {% trans "Week" %}
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <template x-if="viewMode === 'day'">
+            <div class="day-view-container">
+                <template x-for="hour in hours" :key="hour">
+                    <div class="time-slot">
+                        <div class="time-label" x-text="formatHour(hour)"></div>
+                        <div class="slot-content">
+                            <template x-for="event in getEventsForHour(hour)" :key="event.id">
+                                <div class="calendar-event" :class="'calendar-event--' + event.extendedProps.status"
+                                     @click="openAppointment(event.id)"
+                                     x-text="event.title">
+                                </div>
+                            </template>
+                        </div>
+                    </div>
+                </template>
+            </div>
+        </template>
+
+        <template x-if="viewMode === 'week'">
+            <div class="calendar-grid">
+                <div class="calendar-header-cell"></div>
+                <template x-for="day in weekDays" :key="day.date">
+                    <div class="calendar-header-cell">
+                        <div x-text="day.name"></div>
+                        <div class="font-bold" x-text="day.number"></div>
+                    </div>
+                </template>
+                <template x-for="hour in hours" :key="hour">
+                    <template x-for="(day, index) in [null, ...weekDays]" :key="index">
+                        <template x-if="index === 0">
+                            <div class="calendar-time-cell" x-text="formatHour(hour)"></div>
+                        </template>
+                        <template x-if="index > 0">
+                            <div class="calendar-cell">
+                                <template x-for="event in getEventsForDayHour(day.date, hour)" :key="event.id">
+                                    <div class="calendar-event" :class="'calendar-event--' + event.extendedProps.status"
+                                         @click="openAppointment(event.id)"
+                                         x-text="event.extendedProps.customer_name">
+                                    </div>
+                                </template>
+                            </div>
+                        </template>
+                    </template>
+                </template>
+            </div>
+        </template>
+    </div>
+</div>

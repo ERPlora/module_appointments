@@ -1,0 +1,219 @@
+{% load i18n djicons %}
+
+<script>
+window.addSlotModalState = Alpine.reactive({ open: false, dayOfWeek: null, dayName: '' });
+
+function addSlotModal() {
+    return {
+        get open() { return window.addSlotModalState.open; },
+        set open(val) { window.addSlotModalState.open = val; },
+        get dayOfWeek() { return window.addSlotModalState.dayOfWeek; },
+        get dayName() { return window.addSlotModalState.dayName; },
+        startTime: '09:00',
+        endTime: '17:00',
+        async submit() {
+            try {
+                const response = await fetch('{% url "appointments:add_time_slot" schedule.id %}', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token }}' },
+                    body: JSON.stringify({ day_of_week: this.dayOfWeek, start_time: this.startTime, end_time: this.endTime })
+                });
+                const result = await response.json();
+                if (result.success) {
+                    Alpine.store('ui').success('{% trans "Time slot added" %}');
+                    htmx.ajax('GET', '{% url "appointments:schedule_detail" schedule.id %}', {target: '#main-content-area', swap: 'innerHTML'});
+                } else {
+                    Alpine.store('ui').error(result.error || '{% trans "Error adding time slot" %}');
+                }
+            } catch (e) {
+                Alpine.store('ui').error('{% trans "Error adding time slot" %}');
+            }
+            this.open = false;
+        }
+    };
+}
+
+function editSchedule() {
+    const name = prompt('{% trans "Schedule name:" %}', '{{ schedule.name|escapejs }}');
+    if (!name) return;
+
+    fetch('{% url "appointments:schedule_edit" schedule.id %}', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token }}' },
+        body: JSON.stringify({ name: name })
+    })
+    .then(r => r.json())
+    .then(data => {
+        if (data.success) {
+            Alpine.store('ui').success('{% trans "Schedule updated" %}');
+            htmx.ajax('GET', '{% url "appointments:schedule_detail" schedule.id %}', {target: '#main-content-area', swap: 'innerHTML'});
+        } else {
+            Alpine.store('ui').error(data.error || '{% trans "Error updating schedule" %}');
+        }
+    })
+    .catch(() => Alpine.store('ui').error('{% trans "Error updating schedule" %}'));
+}
+
+async function deleteSchedule() {
+    if (!confirm('{% trans "Are you sure you want to delete this schedule?" %}')) return;
+    try {
+        const response = await fetch('{% url "appointments:schedule_delete" schedule.id %}', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token }}' }
+        });
+        const data = await response.json();
+        if (data.success) {
+            Alpine.store('ui').success('{% trans "Schedule deleted" %}');
+            htmx.ajax('GET', '{% url "appointments:schedules" %}', {target: '#main-content-area', swap: 'innerHTML'});
+            history.pushState({}, '', '{% url "appointments:schedules" %}');
+        } else {
+            Alpine.store('ui').error(data.error || '{% trans "Error deleting schedule" %}');
+        }
+    } catch (e) {
+        Alpine.store('ui').error('{% trans "Error deleting schedule" %}');
+    }
+}
+
+function addTimeSlot(dayOfWeek, dayName) {
+    window.addSlotModalState.dayOfWeek = dayOfWeek;
+    window.addSlotModalState.dayName = dayName;
+    window.addSlotModalState.open = true;
+}
+
+async function deleteTimeSlot(slotId) {
+    if (!confirm('{% trans "Delete this time slot?" %}')) return;
+    try {
+        const response = await fetch(`/m/appointments/schedules/slots/${slotId}/delete/`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token }}' }
+        });
+        const result = await response.json();
+        if (result.success) {
+            Alpine.store('ui').success('{% trans "Time slot deleted" %}');
+            htmx.ajax('GET', '{% url "appointments:schedule_detail" schedule.id %}', {target: '#main-content-area', swap: 'innerHTML'});
+        } else {
+            Alpine.store('ui').error(result.error || '{% trans "Error deleting time slot" %}');
+        }
+    } catch (e) {
+        Alpine.store('ui').error('{% trans "Error deleting time slot" %}');
+    }
+}
+</script>
+
+<div class="p-4">
+    <!-- Back Button -->
+    <button class="btn btn-ghost btn-sm mb-4"
+        hx-get="{% url 'appointments:schedules' %}"
+        hx-target="#main-content-area"
+        hx-push-url="true">
+        {% icon "arrow-back-outline" css_class="mr-1" %}
+        {% trans "Back to Schedules" %}
+    </button>
+
+    <!-- Schedule Header -->
+    <div class="card mb-4">
+        <div class="card-header">
+            <div class="flex justify-between items-center">
+                <div class="flex items-center gap-3">
+                    <div class="w-12 h-12 bg-primary/10 rounded-xl flex items-center justify-center">
+                        {% icon "time-outline" css_class="text-2xl text-primary" %}
+                    </div>
+                    <div>
+                        <h2 class="text-xl font-bold">{{ schedule.name }}</h2>
+                        {% if schedule.description %}
+                        <p class="text-sm text-muted">{{ schedule.description }}</p>
+                        {% endif %}
+                    </div>
+                </div>
+                <div class="flex items-center gap-2">
+                    {% if schedule.is_default %}
+                    <span class="badge color-primary">{% trans "Default" %}</span>
+                    {% endif %}
+                    {% if not schedule.is_active %}
+                    <span class="badge ">{% trans "Inactive" %}</span>
+                    {% endif %}
+                    <button type="button" class="btn btn-sm btn-outline" onclick="editSchedule()">
+                        {% icon "create-outline" css_class="mr-1" %}
+                        {% trans "Edit" %}
+                    </button>
+                    <button type="button" class="btn btn-sm btn-outline color-error" onclick="deleteSchedule()">
+                        {% icon "trash-outline" css_class="mr-1" %}
+                        {% trans "Delete" %}
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Time Slots by Day -->
+    {% for day_num, day_data in slots_by_day.items %}
+    <div class="card mb-3">
+        <div class="card-header">
+            <div class="flex justify-between items-center">
+                <h3 class="card-title">{{ day_data.name }}</h3>
+                <button type="button" class="btn btn-ghost btn-sm" onclick="addTimeSlot({{ day_num }}, '{{ day_data.name }}')">
+                    {% icon "add-outline" css_class="mr-1" %}
+                    {% trans "Add Slot" %}
+                </button>
+            </div>
+        </div>
+        <div class="card-body p-0">
+            {% if day_data.slots %}
+            <div class="list">
+                {% for slot in day_data.slots %}
+                <div class="list-item">
+                    <div class="list-item-start">
+                        {% icon "time-outline" css_class="text-xl text-primary" %}
+                    </div>
+                    <div class="list-item-content">
+                        <div class="list-item-label">{{ slot.start_time|time:"H:i" }} - {{ slot.end_time|time:"H:i" }}</div>
+                        <div class="list-item-note">{{ slot.duration_minutes }} {% trans "minutes" %}</div>
+                    </div>
+                    <div class="list-item-end flex items-center gap-2">
+                        {% if not slot.is_active %}
+                        <span class="badge  badge-sm">{% trans "Inactive" %}</span>
+                        {% endif %}
+                        <button type="button" class="btn btn-ghost btn-sm text-error" onclick="deleteTimeSlot('{{ slot.id }}')">
+                            {% icon "trash-outline" %}
+                        </button>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <div class="text-center py-6 text-muted">
+                <p class="text-sm">{% trans "No time slots defined for this day" %}</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+    {% endfor %}
+</div>
+
+<!-- Add Time Slot Modal -->
+<div class="modal-backdrop" x-data="addSlotModal()" :data-state="open ? 'open' : 'closed'" @keydown.escape.window="open = false">
+    <div class="modal modal-sm">
+        <div class="modal-header">
+            <h3 class="modal-title">{% trans "Add Time Slot" %} - <span x-text="dayName"></span></h3>
+            <button type="button" class="modal-close" @click="open = false">
+                {% icon "close-outline" %}
+            </button>
+        </div>
+        <div class="modal__content">
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium mb-1">{% trans "Start Time" %}</label>
+                    <input type="time" class="input w-full" x-model="startTime" value="09:00">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium mb-1">{% trans "End Time" %}</label>
+                    <input type="time" class="input w-full" x-model="endTime" value="17:00">
+                </div>
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button type="button" class="btn btn-outline" @click="open = false">{% trans "Cancel" %}</button>
+            <button type="button" class="btn color-primary" @click="submit()">{% trans "Add" %}</button>
+        </div>
+    </div>
+</div>

@@ -1,0 +1,108 @@
+{% load i18n djicons %}
+
+<div class="p-4">
+    <div class="flex justify-end mb-4">
+        <button type="button" class="btn color-primary" onclick="addBlockedTime()">
+            {% icon "add-outline" css_class="mr-2" %}
+            {% trans "Block Time" %}
+        </button>
+    </div>
+
+    <!-- Blocked Times List -->
+    <div class="card">
+        <div class="card-body p-0">
+            {% if blocked_times %}
+            <div class="list">
+                {% for blocked in blocked_times %}
+                <div class="list-item">
+                    <div class="list-item-start">
+                        <div class="w-10 h-10 rounded-xl bg-error/10 flex items-center justify-center">
+                            {% icon "close-circle-outline" css_class="text-xl text-error" %}
+                        </div>
+                    </div>
+                    <div class="list-item-content">
+                        <div class="list-item-label">{{ blocked.title }}</div>
+                        <div class="list-item-note">
+                            {{ blocked.start_datetime|date:"d M Y H:i" }} - {{ blocked.end_datetime|date:"d M Y H:i" }}
+                            {% if blocked.staff %} &middot; {{ blocked.staff }}{% endif %}
+                        </div>
+                        {% if blocked.reason %}
+                        <div class="text-xs text-muted mt-1">{{ blocked.reason }}</div>
+                        {% endif %}
+                    </div>
+                    <div class="list-item-end flex items-center gap-2">
+                        <span class="badge color-{% if blocked.block_type == 'holiday' %}error{% elif blocked.block_type == 'vacation' %}warning{% elif blocked.block_type == 'break' %}primary{% else %}medium{% endif %} badge-sm">
+                            {{ blocked.get_block_type_display }}
+                        </span>
+                        <button type="button" class="btn btn-ghost btn-sm text-error" onclick="deleteBlocked('{{ blocked.id }}')">
+                            {% icon "trash-outline" %}
+                        </button>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <div class="text-center py-12 text-muted">
+                {% icon "checkmark-circle-outline" css_class="text-5xl block mx-auto mb-2" %}
+                <p class="mt-2">{% trans "No blocked times" %}</p>
+                <p class="text-sm">{% trans "No time periods are currently blocked" %}</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<script>
+function addBlockedTime() {
+    // Simple inline form approach - using prompt for quick blocking
+    const title = prompt('{% trans "Block title (e.g. Holiday, Vacation):" %}');
+    if (!title) return;
+
+    const startDate = prompt('{% trans "Start date and time (YYYY-MM-DD HH:MM):" %}');
+    if (!startDate) return;
+
+    const endDate = prompt('{% trans "End date and time (YYYY-MM-DD HH:MM):" %}');
+    if (!endDate) return;
+
+    fetch('{% url "appointments:blocked_add" %}', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token }}' },
+        body: JSON.stringify({
+            title: title,
+            start_datetime: startDate.replace(' ', 'T'),
+            end_datetime: endDate.replace(' ', 'T'),
+            block_type: 'other'
+        })
+    })
+    .then(r => r.json())
+    .then(data => {
+        if (data.success) {
+            Alpine.store('ui').success('{% trans "Time blocked successfully" %}');
+            htmx.ajax('GET', '{% url "appointments:blocked_list" %}', {target: '#main-content-area', swap: 'innerHTML'});
+        } else {
+            Alpine.store('ui').error(data.error || '{% trans "Error blocking time" %}');
+        }
+    })
+    .catch(() => Alpine.store('ui').error('{% trans "Error blocking time" %}'));
+}
+
+async function deleteBlocked(id) {
+    if (!confirm('{% trans "Are you sure you want to remove this blocked time?" %}')) return;
+
+    try {
+        const response = await fetch(`/m/appointments/blocked/${id}/delete/`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token }}' }
+        });
+        const result = await response.json();
+        if (result.success) {
+            Alpine.store('ui').success('{% trans "Blocked time removed" %}');
+            htmx.ajax('GET', '{% url "appointments:blocked_list" %}', {target: '#main-content-area', swap: 'innerHTML'});
+        } else {
+            Alpine.store('ui').error(result.error || '{% trans "Error removing blocked time" %}');
+        }
+    } catch (e) {
+        Alpine.store('ui').error('{% trans "Error removing blocked time" %}');
+    }
+}
+</script>

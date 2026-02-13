@@ -1,0 +1,192 @@
+{% load i18n djicons %}
+
+<div class="p-4">
+    <!-- Stats Cards -->
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
+        <div class="card">
+            <div class="card-body flex items-center gap-3">
+                <div class="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
+                    {% icon "calendar-outline" css_class="text-xl text-primary" %}
+                </div>
+                <div>
+                    <div class="text-2xl font-bold">{{ stats.today }}</div>
+                    <div class="text-xs text-muted">{% trans "Today" %}</div>
+                </div>
+            </div>
+        </div>
+        <div class="card">
+            <div class="card-body flex items-center gap-3">
+                <div class="w-10 h-10 rounded-xl bg-warning/10 flex items-center justify-center">
+                    {% icon "time-outline" css_class="text-xl text-warning" %}
+                </div>
+                <div>
+                    <div class="text-2xl font-bold">{{ stats.pending }}</div>
+                    <div class="text-xs text-muted">{% trans "Pending" %}</div>
+                </div>
+            </div>
+        </div>
+        <div class="card">
+            <div class="card-body flex items-center gap-3">
+                <div class="w-10 h-10 rounded-xl bg-success/10 flex items-center justify-center">
+                    {% icon "checkmark-circle-outline" css_class="text-xl text-success" %}
+                </div>
+                <div>
+                    <div class="text-2xl font-bold">{{ stats.confirmed }}</div>
+                    <div class="text-xs text-muted">{% trans "Confirmed" %}</div>
+                </div>
+            </div>
+        </div>
+        <div class="card">
+            <div class="card-body flex items-center gap-3">
+                <div class="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
+                    {% icon "analytics-outline" css_class="text-xl text-primary" %}
+                </div>
+                <div>
+                    <div class="text-2xl font-bold">{{ stats.this_week }}</div>
+                    <div class="text-xs text-muted">{% trans "This Week" %}</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Today's Appointments -->
+    <div class="card mb-4">
+        <div class="card-header">
+            <div class="flex justify-between items-center">
+                <h3 class="card-title">
+                    {% icon "today-outline" css_class="text-primary" %}
+                    {% trans "Today's Appointments" %}
+                </h3>
+                <div class="flex gap-2">
+                    <button class="btn btn-sm btn-outline"
+                        hx-get="{% url 'appointments:calendar' %}"
+                        hx-target="#main-content-area"
+                        hx-push-url="true">
+                        {% icon "calendar-outline" css_class="mr-1" %}
+                        {% trans "Calendar" %}
+                    </button>
+                    <button class="btn btn-sm color-primary"
+                        hx-get="{% url 'appointments:create' %}"
+                        hx-target="#main-content-area"
+                        hx-push-url="true">
+                        {% icon "add-outline" css_class="mr-1" %}
+                        {% trans "New" %}
+                    </button>
+                </div>
+            </div>
+        </div>
+        <div class="card-body p-0">
+            {% if today_appointments %}
+            <div class="list">
+                {% for appointment in today_appointments %}
+                <a hx-get="{% url 'appointments:detail' appointment.id %}"
+                   hx-target="#main-content-area"
+                   hx-push-url="true"
+                   class="list-item list-item-clickable">
+                    <div class="list-item-start">
+                        <div class="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center">
+                            {% icon "person-outline" css_class="text-xl text-primary" %}
+                        </div>
+                    </div>
+                    <div class="list-item-content">
+                        <div class="list-item-label">{{ appointment.customer_name }}</div>
+                        <div class="list-item-note">
+                            {{ appointment.service_name }} &middot; {{ appointment.start_datetime|time:"H:i" }} - {{ appointment.end_datetime|time:"H:i" }}
+                            {% if appointment.staff_name %} &middot; {{ appointment.staff_name }}{% endif %}
+                        </div>
+                    </div>
+                    <div class="list-item-end">
+                        <span class="badge color-{% if appointment.status == 'confirmed' %}primary{% elif appointment.status == 'pending' %}warning{% elif appointment.status == 'completed' %}success{% elif appointment.status == 'in_progress' %}primary{% elif appointment.status == 'no_show' %}error{% else %}medium{% endif %}">
+                            {{ appointment.get_status_display }}
+                        </span>
+                    </div>
+                </a>
+                {% endfor %}
+            </div>
+            {% else %}
+            <div class="text-center py-12 text-muted">
+                {% icon "calendar-outline" css_class="text-5xl block mx-auto mb-2" %}
+                <p class="mt-2">{% trans "No appointments scheduled for today" %}</p>
+                <button class="btn btn-sm color-primary mt-3"
+                    hx-get="{% url 'appointments:create' %}"
+                    hx-target="#main-content-area"
+                    hx-push-url="true">
+                    {% trans "Book an appointment" %}
+                </button>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Upcoming Appointments -->
+    <div class="card mb-4">
+        <div class="card-header">
+            <div class="flex justify-between items-center">
+                <h3 class="card-title">
+                    {% icon "arrow-forward-outline" css_class="text-primary" %}
+                    {% trans "Upcoming Appointments" %}
+                </h3>
+                <button class="btn btn-ghost btn-sm"
+                    hx-get="{% url 'appointments:list' %}"
+                    hx-target="#main-content-area"
+                    hx-push-url="true">
+                    {% trans "View All" %}
+                    {% icon "chevron-forward-outline" %}
+                </button>
+            </div>
+        </div>
+        <div class="card-body p-0">
+            {% if upcoming_appointments %}
+            <div class="list">
+                {% for appointment in upcoming_appointments %}
+                <a hx-get="{% url 'appointments:detail' appointment.id %}"
+                   hx-target="#main-content-area"
+                   hx-push-url="true"
+                   class="list-item list-item-clickable">
+                    <div class="list-item-start">
+                        <div class="flex flex-col items-center justify-center w-12 h-12 rounded-lg" style="background: var(--color-base-200);">
+                            <span class="text-xs text-muted">{{ appointment.start_datetime|date:"D" }}</span>
+                            <span class="text-lg font-bold leading-tight">{{ appointment.start_datetime|date:"d" }}</span>
+                        </div>
+                    </div>
+                    <div class="list-item-content">
+                        <div class="list-item-label">{{ appointment.customer_name }}</div>
+                        <div class="list-item-note">
+                            {{ appointment.service_name }} &middot; {{ appointment.start_datetime|time:"H:i" }}
+                        </div>
+                    </div>
+                    <div class="list-item-end">
+                        <span class="badge color-{% if appointment.status == 'confirmed' %}primary{% elif appointment.status == 'pending' %}warning{% else %}medium{% endif %}">
+                            {{ appointment.get_status_display }}
+                        </span>
+                    </div>
+                </a>
+                {% endfor %}
+            </div>
+            {% else %}
+            <div class="text-center py-8 text-muted">
+                <p>{% trans "No upcoming appointments" %}</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Summary -->
+    <div class="card">
+        <div class="card-header">
+            <h3 class="card-title">{% trans "Today's Summary" %}</h3>
+        </div>
+        <div class="card-body">
+            <div class="grid grid-cols-2 gap-3">
+                <div class="p-3 rounded-lg text-center" style="background: var(--color-base-200);">
+                    <div class="text-2xl font-bold text-success">{{ stats.completed_today }}</div>
+                    <div class="text-xs text-muted">{% trans "Completed Today" %}</div>
+                </div>
+                <div class="p-3 rounded-lg text-center" style="background: var(--color-base-200);">
+                    <div class="text-2xl font-bold text-primary">{{ stats.this_week }}</div>
+                    <div class="text-xs text-muted">{% trans "This Week" %}</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

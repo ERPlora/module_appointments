@@ -1,0 +1,281 @@
+{% load i18n djicons %}
+
+<div class="p-4">
+    <!-- Booking Settings -->
+    <div class="card mb-4">
+        <div class="card-header">
+            <h3 class="card-title">{% icon "calendar-outline" css_class="text-primary" %} {% trans "Booking Settings" %}</h3>
+        </div>
+        <div class="list">
+            <div class="list-item">
+                <div class="list-item-content">
+                    <div class="list-item-label">{% trans "Default Duration" %}</div>
+                    <div class="list-item-note">{% trans "Default appointment duration in minutes" %}</div>
+                </div>
+                <div class="list-item-end">
+                    <input type="number" class="input input-sm" style="width: 80px;"
+                        value="{{ settings.default_duration }}"
+                        hx-post="{% url 'appointments:settings_input' %}"
+                        hx-vals='js:{field: "default_duration", value: event.target.value}'
+                        hx-trigger="change"
+                        hx-swap="none"
+                        min="5" max="480">
+                </div>
+            </div>
+            <div class="list-item">
+                <div class="list-item-content">
+                    <div class="list-item-label">{% trans "Minimum Booking Notice" %}</div>
+                    <div class="list-item-note">{% trans "Minutes in advance required for booking" %}</div>
+                </div>
+                <div class="list-item-end">
+                    <input type="number" class="input input-sm" style="width: 80px;"
+                        value="{{ settings.min_booking_notice }}"
+                        hx-post="{% url 'appointments:settings_input' %}"
+                        hx-vals='js:{field: "min_booking_notice", value: event.target.value}'
+                        hx-trigger="change"
+                        hx-swap="none"
+                        min="0">
+                </div>
+            </div>
+            <div class="list-item">
+                <div class="list-item-content">
+                    <div class="list-item-label">{% trans "Maximum Advance Booking" %}</div>
+                    <div class="list-item-note">{% trans "Days in advance appointments can be booked" %}</div>
+                </div>
+                <div class="list-item-end">
+                    <input type="number" class="input input-sm" style="width: 80px;"
+                        value="{{ settings.max_advance_booking }}"
+                        hx-post="{% url 'appointments:settings_input' %}"
+                        hx-vals='js:{field: "max_advance_booking", value: event.target.value}'
+                        hx-trigger="change"
+                        hx-swap="none"
+                        min="1" max="365">
+                </div>
+            </div>
+            <div class="list-item">
+                <div class="list-item-content">
+                    <div class="list-item-label">{% trans "Allow Overlapping" %}</div>
+                    <div class="list-item-note">{% trans "Allow overlapping appointments for the same staff" %}</div>
+                </div>
+                <div class="list-item-end">
+                    <label class="toggle color-success">
+                        <input type="checkbox" {% if settings.allow_overlapping %}checked{% endif %}
+                            hx-post="{% url 'appointments:settings_toggle' %}"
+                            hx-vals='js:{field: "allow_overlapping"}'
+                            hx-swap="none">
+                        <span class="toggle-track"><span class="toggle-thumb"></span></span>
+                    </label>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Reminder Settings -->
+    <div class="card mb-4">
+        <div class="card-header">
+            <h3 class="card-title">{% icon "notifications-outline" css_class="text-warning" %} {% trans "Reminder Settings" %}</h3>
+        </div>
+        <div class="list">
+            <div class="list-item">
+                <div class="list-item-content">
+                    <div class="list-item-label">{% trans "Send Reminders" %}</div>
+                    <div class="list-item-note">{% trans "Send reminder notifications to customers" %}</div>
+                </div>
+                <div class="list-item-end">
+                    <label class="toggle color-success">
+                        <input type="checkbox" {% if settings.send_reminders %}checked{% endif %}
+                            hx-post="{% url 'appointments:settings_toggle' %}"
+                            hx-vals='js:{field: "send_reminders"}'
+                            hx-swap="none">
+                        <span class="toggle-track"><span class="toggle-thumb"></span></span>
+                    </label>
+                </div>
+            </div>
+            <div class="list-item">
+                <div class="list-item-content">
+                    <div class="list-item-label">{% trans "Reminder Hours Before" %}</div>
+                    <div class="list-item-note">{% trans "Hours before appointment to send reminder" %}</div>
+                </div>
+                <div class="list-item-end">
+                    <input type="number" class="input input-sm" style="width: 80px;"
+                        value="{{ settings.reminder_hours_before }}"
+                        hx-post="{% url 'appointments:settings_input' %}"
+                        hx-vals='js:{field: "reminder_hours_before", value: event.target.value}'
+                        hx-trigger="change"
+                        hx-swap="none"
+                        min="1" max="168">
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Cancellation Settings -->
+    <div class="card mb-4">
+        <div class="card-header">
+            <h3 class="card-title">{% icon "close-circle-outline" css_class="text-error" %} {% trans "Cancellation Settings" %}</h3>
+        </div>
+        <div class="list">
+            <div class="list-item">
+                <div class="list-item-content">
+                    <div class="list-item-label">{% trans "Allow Customer Cancellation" %}</div>
+                    <div class="list-item-note">{% trans "Allow customers to cancel their appointments" %}</div>
+                </div>
+                <div class="list-item-end">
+                    <label class="toggle color-success">
+                        <input type="checkbox" {% if settings.allow_customer_cancellation %}checked{% endif %}
+                            hx-post="{% url 'appointments:settings_toggle' %}"
+                            hx-vals='js:{field: "allow_customer_cancellation"}'
+                            hx-swap="none">
+                        <span class="toggle-track"><span class="toggle-thumb"></span></span>
+                    </label>
+                </div>
+            </div>
+            <div class="list-item">
+                <div class="list-item-content">
+                    <div class="list-item-label">{% trans "Cancellation Notice Hours" %}</div>
+                    <div class="list-item-note">{% trans "Minimum hours notice for cancellation" %}</div>
+                </div>
+                <div class="list-item-end">
+                    <input type="number" class="input input-sm" style="width: 80px;"
+                        value="{{ settings.cancellation_notice_hours }}"
+                        hx-post="{% url 'appointments:settings_input' %}"
+                        hx-vals='js:{field: "cancellation_notice_hours", value: event.target.value}'
+                        hx-trigger="change"
+                        hx-swap="none"
+                        min="0" max="168">
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Calendar Display -->
+    <div class="card mb-4">
+        <div class="card-header">
+            <h3 class="card-title">{% icon "grid-outline" css_class="text-success" %} {% trans "Calendar Display" %}</h3>
+        </div>
+        <div class="list">
+            <div class="list-item">
+                <div class="list-item-content">
+                    <div class="list-item-label">{% trans "Calendar Start Hour" %}</div>
+                    <div class="list-item-note">{% trans "First hour shown in calendar" %}</div>
+                </div>
+                <div class="list-item-end">
+                    <input type="number" class="input input-sm" style="width: 80px;"
+                        value="{{ settings.calendar_start_hour }}"
+                        hx-post="{% url 'appointments:settings_input' %}"
+                        hx-vals='js:{field: "calendar_start_hour", value: event.target.value}'
+                        hx-trigger="change"
+                        hx-swap="none"
+                        min="0" max="23">
+                </div>
+            </div>
+            <div class="list-item">
+                <div class="list-item-content">
+                    <div class="list-item-label">{% trans "Calendar End Hour" %}</div>
+                    <div class="list-item-note">{% trans "Last hour shown in calendar" %}</div>
+                </div>
+                <div class="list-item-end">
+                    <input type="number" class="input input-sm" style="width: 80px;"
+                        value="{{ settings.calendar_end_hour }}"
+                        hx-post="{% url 'appointments:settings_input' %}"
+                        hx-vals='js:{field: "calendar_end_hour", value: event.target.value}'
+                        hx-trigger="change"
+                        hx-swap="none"
+                        min="1" max="24">
+                </div>
+            </div>
+            <div class="list-item">
+                <div class="list-item-content">
+                    <div class="list-item-label">{% trans "Time Slot Interval" %}</div>
+                    <div class="list-item-note">{% trans "Minutes between available slots" %}</div>
+                </div>
+                <div class="list-item-end">
+                    <input type="number" class="input input-sm" style="width: 80px;"
+                        value="{{ settings.slot_interval }}"
+                        hx-post="{% url 'appointments:settings_input' %}"
+                        hx-vals='js:{field: "slot_interval", value: event.target.value}'
+                        hx-trigger="change"
+                        hx-swap="none"
+                        min="5" max="60" step="5">
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Actions -->
+    <div class="card mb-4">
+        <div class="card-header">
+            <h3 class="card-title">{% icon "link-outline" %} {% trans "Quick Actions" %}</h3>
+        </div>
+        <div class="list">
+            <a hx-get="{% url 'appointments:schedules' %}"
+               hx-target="#main-content-area"
+               hx-push-url="true"
+               class="list-item list-item-clickable">
+                <div class="list-item-start">{% icon "time-outline" css_class="text-primary" %}</div>
+                <div class="list-item-content">
+                    <div class="list-item-label">{% trans "Manage Schedules" %}</div>
+                    <div class="list-item-note">{% trans "Define working hours and availability" %}</div>
+                </div>
+                <div class="list-item-end">{% icon "chevron-forward-outline" css_class="text-muted" %}</div>
+            </a>
+            <a hx-get="{% url 'appointments:blocked_list' %}"
+               hx-target="#main-content-area"
+               hx-push-url="true"
+               class="list-item list-item-clickable">
+                <div class="list-item-start">{% icon "close-circle-outline" css_class="text-error" %}</div>
+                <div class="list-item-content">
+                    <div class="list-item-label">{% trans "Blocked Times" %}</div>
+                    <div class="list-item-note">{% trans "Manage holidays and blocked periods" %}</div>
+                </div>
+                <div class="list-item-end">{% icon "chevron-forward-outline" css_class="text-muted" %}</div>
+            </a>
+            <a hx-get="{% url 'appointments:recurring_list' %}"
+               hx-target="#main-content-area"
+               hx-push-url="true"
+               class="list-item list-item-clickable">
+                <div class="list-item-start">{% icon "repeat-outline" css_class="text-warning" %}</div>
+                <div class="list-item-content">
+                    <div class="list-item-label">{% trans "Recurring Appointments" %}</div>
+                    <div class="list-item-note">{% trans "Manage recurring appointment templates" %}</div>
+                </div>
+                <div class="list-item-end">{% icon "chevron-forward-outline" css_class="text-muted" %}</div>
+            </a>
+        </div>
+    </div>
+
+    <!-- Reset -->
+    <div class="card" style="border-color: var(--color-warning);">
+        <div class="card-header">
+            <h3 class="card-title text-warning">{% trans "Reset Settings" %}</h3>
+        </div>
+        <div class="card-body">
+            <p class="text-muted mb-3">{% trans "Restore all appointment settings to their default values." %}</p>
+            <button type="button" class="btn color-warning btn-outline"
+                    onclick="resetSettings()">
+                {% icon "refresh-outline" css_class="mr-1" %} {% trans "Reset to Defaults" %}
+            </button>
+        </div>
+    </div>
+</div>
+
+<script>
+function resetSettings() {
+    if (!confirm('{% trans "Reset all settings to defaults?" %}')) return;
+
+    fetch('{% url "appointments:settings_reset" %}', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token }}' }
+    })
+    .then(r => r.json())
+    .then(data => {
+        if (data.success) {
+            Alpine.store('ui').success('{% trans "Settings reset to defaults" %}');
+            htmx.ajax('GET', '{% url "appointments:settings" %}', {target: '#main-content-area', swap: 'innerHTML'});
+        } else {
+            Alpine.store('ui').error(data.error || '{% trans "Error resetting settings" %}');
+        }
+    })
+    .catch(() => Alpine.store('ui').error('{% trans "Error resetting settings" %}'));
+}
+</script>

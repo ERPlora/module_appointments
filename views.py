@@ -1,22 +1,19 @@
-"""
-Appointments Module Views
+"""Appointments views."""
 
-Views for appointment management.
-"""
 import json
-from datetime import datetime, timedelta, date, time
-from decimal import Decimal
-from django.shortcuts import render, get_object_or_404
-from django.http import JsonResponse
-from django.views.decorators.http import require_http_methods, require_POST, require_GET
-from django.utils import timezone
+from datetime import datetime, timedelta
+
 from django.db.models import Q, Count
+from django.http import JsonResponse
+from django.utils import timezone
+from django.views.decorators.http import require_POST, require_GET
 
 from apps.accounts.decorators import login_required
-from apps.modules_runtime.decorators import module_view
+from apps.core.htmx import htmx_view
+from apps.modules_runtime.navigation import with_module_nav
 
 from .models import (
-    AppointmentsConfig,
+    AppointmentsSettings,
     Schedule,
     ScheduleTimeSlot,
     BlockedTime,
@@ -24,64 +21,101 @@ from .models import (
     AppointmentHistory,
     RecurringAppointment,
 )
-from .services import AppointmentService
+from .forms import (
+    AppointmentForm,
+    ScheduleForm,
+    ScheduleTimeSlotForm,
+    BlockedTimeForm,
+    RecurringAppointmentForm,
+    AppointmentFilterForm,
+    AppointmentsSettingsForm,
+)
+
+
+def _hub(request):
+    return request.session.get('hub_id')
+
+
+def _employee(request):
+    from apps.accounts.models import LocalUser
+    uid = request.session.get('local_user_id')
+    if uid:
+        return LocalUser.objects.filter(pk=uid).first()
+    return None
+
+
+def _log(appointment, action, description='', performed_by=None, old_value=None, new_value=None):
+    AppointmentHistory.log(appointment, action, description, performed_by, old_value, new_value)
 
 
 # =============================================================================
-# DASHBOARD
+# Dashboard
 # =============================================================================
 
 @login_required
-@module_view("appointments", "dashboard")
+@with_module_nav('appointments', 'dashboard')
+@htmx_view('appointments/pages/dashboard.html', 'appointments/partials/dashboard.html')
+def index(request):
+    return dashboard(request)
+
+
+@login_required
+@with_module_nav('appointments', 'dashboard')
+@htmx_view('appointments/pages/dashboard.html', 'appointments/partials/dashboard.html')
 def dashboard(request):
     """Dashboard with appointment overview."""
+    hub = _hub(request)
     today = timezone.now().date()
 
-    # Today's appointments
-    today_appointments = AppointmentService.get_today_appointments()
+    today_appointments = Appointment.get_for_date(hub, today)
+    upcoming = Appointment.get_upcoming(hub, limit=5)
 
-    # Upcoming appointments
-    upcoming = AppointmentService.get_upcoming_appointments(limit=5)
-
-    # Statistics
-    stats = AppointmentService.get_appointment_stats()
-
-    # Pending confirmations
-    pending_count = Appointment.objects.filter(status='pending').count()
+    all_apts = Appointment.objects.filter(hub_id=hub, is_deleted=False)
+    stats = {
+        'today': today_appointments.count(),
+        'pending': all_apts.filter(status='pending').count(),
+        'confirmed': all_apts.filter(status='confirmed', start_datetime__date=today).count(),
+        'completed_today': all_apts.filter(status='completed', start_datetime__date=today).count(),
+        'this_week': all_apts.filter(
+            start_datetime__date__gte=today,
+            start_datetime__date__lte=today + timedelta(days=7),
+        ).exclude(status='cancelled').count(),
+    }
 
     return {
         'today_appointments': today_appointments,
         'upcoming_appointments': upcoming,
         'stats': stats,
-        'pending_count': pending_count,
         'today': today,
     }
 
 
 # =============================================================================
-# CALENDAR
+# Calendar
 # =============================================================================
 
 @login_required
-@module_view("appointments", "calendar")
+@with_module_nav('appointments', 'calendar')
+@htmx_view('appointments/pages/calendar.html', 'appointments/partials/calendar.html')
 def calendar_view(request):
-    """Calendar view for appointments."""
-    config = AppointmentsConfig.get_config()
-
+    """Calendar view."""
+    hub = _hub(request)
+    settings = AppointmentsSettings.get_settings(hub)
     return {
-        'config': config,
-        'calendar_start_hour': config.calendar_start_hour,
-        'calendar_end_hour': config.calendar_end_hour,
+        'settings': settings,
+        'calendar_start_hour': settings.calendar_start_hour,
+        'calendar_end_hour': settings.calendar_end_hour,
     }
 
 
 @login_required
 @require_GET
 def calendar_data(request):
-    """Get calendar data for a date range (API endpoint for calendar JS)."""
+    """Calendar data API for JS calendar."""
+    hub = _hub(request)
     start_str = request.GET.get('start')
     end_str = request.GET.get('end')
-    staff_id = request.GET.get('staff_id')
+    staff_id = request.GET.get('staff')
 
     try:
         start_date = datetime.strptime(start_str, '%Y-%m-%d').date() if start_str else timezone.now().date()
@@ -90,637 +124,581 @@ def calendar_data(request):
         start_date = timezone.now().date()
         end_date = start_date + timedelta(days=7)
 
-    appointments = AppointmentService.get_appointments_for_range(
-        start_date, end_date,
-        staff_id=int(staff_id) if staff_id else None
-    )
+    appointments = Appointment.objects.filter(
+        hub_id=hub, is_deleted=False,
+        start_datetime__date__gte=start_date,
+        start_datetime__date__lte=end_date,
+    ).exclude(status='cancelled')
 
-    events = []
-    for apt in appointments:
-        color_map = {
-            'pending': '#FFA500',
-            'confirmed': '#3B82F6',
-            'in_progress': '#8B5CF6',
-            'completed': '#10B981',
-            'cancelled': '#6B7280',
-            'no_show': '#EF4444',
+    if staff_id:
+        appointments = appointments.filter(staff_id=staff_id)
+
+    color_map = {
+        'pending': '#FFA500',
+        'confirmed': '#3B82F6',
+        'in_progress': '#8B5CF6',
+        'completed': '#10B981',
+        'cancelled': '#6B7280',
+        'no_show': '#EF4444',
+    }
+
+    events = [{
+        'id': str(apt.pk),
+        'title': f"{apt.customer_name} - {apt.service_name}",
+        'start': apt.start_datetime.isoformat(),
+        'end': apt.end_datetime.isoformat(),
+        'color': color_map.get(apt.status, '#3B82F6'),
+        'extendedProps': {
+            'status': apt.status,
+            'customer_name': apt.customer_name,
+            'customer_phone': apt.customer_phone,
+            'service_name': apt.service_name,
+            'staff_name': apt.staff_name,
+            'appointment_number': apt.appointment_number,
         }
-
-        events.append({
-            'id': apt.id,
-            'title': f"{apt.customer_name} - {apt.service_name}",
-            'start': apt.start_datetime.isoformat(),
-            'end': apt.end_datetime.isoformat(),
-            'color': color_map.get(apt.status, '#3B82F6'),
-            'extendedProps': {
-                'status': apt.status,
-                'customer_name': apt.customer_name,
-                'customer_phone': apt.customer_phone,
-                'service_name': apt.service_name,
-                'staff_name': apt.staff_name,
-                'appointment_number': apt.appointment_number,
-            }
-        })
+    } for apt in appointments]
 
     return JsonResponse({'events': events})
 
 
 # =============================================================================
-# APPOINTMENTS LIST
+# Appointments List & CRUD
 # =============================================================================
 
 @login_required
-@module_view("appointments", "appointments")
+@with_module_nav('appointments', 'appointments')
+@htmx_view('appointments/pages/list.html', 'appointments/partials/list.html')
 def appointments_list(request):
-    """List all appointments with filters."""
-    search = request.GET.get('search', '')
-    status_filter = request.GET.get('status', '')
-    date_filter = request.GET.get('date', '')
+    """List appointments with filters."""
+    hub = _hub(request)
+    appointments = Appointment.objects.filter(hub_id=hub, is_deleted=False)
 
-    queryset = Appointment.objects.all()
+    q = request.GET.get('q', '')
+    status = request.GET.get('status', '')
+    date_str = request.GET.get('date', '')
 
-    if search:
-        queryset = queryset.filter(
-            Q(customer_name__icontains=search) |
-            Q(customer_phone__icontains=search) |
-            Q(appointment_number__icontains=search) |
-            Q(service_name__icontains=search)
+    if q:
+        appointments = appointments.filter(
+            Q(customer_name__icontains=q) | Q(customer_phone__icontains=q) |
+            Q(appointment_number__icontains=q) | Q(service_name__icontains=q)
         )
-
-    if status_filter:
-        queryset = queryset.filter(status=status_filter)
-
-    if date_filter:
+    if status:
+        appointments = appointments.filter(status=status)
+    if date_str:
         try:
-            filter_date = datetime.strptime(date_filter, '%Y-%m-%d').date()
-            queryset = queryset.filter(start_datetime__date=filter_date)
+            filter_date = datetime.strptime(date_str, '%Y-%m-%d').date()
+            appointments = appointments.filter(start_datetime__date=filter_date)
         except ValueError:
             pass
 
-    appointments = queryset.order_by('-start_datetime')[:50]
+    appointments = appointments.order_by('-start_datetime')[:50]
+    filter_form = AppointmentFilterForm(request.GET)
 
     return {
         'appointments': appointments,
-        'search': search,
-        'status_filter': status_filter,
-        'date_filter': date_filter,
+        'filter_form': filter_form,
+        'q': q,
         'status_choices': Appointment.STATUS_CHOICES,
     }
 
 
 @login_required
+@with_module_nav('appointments', 'appointments')
+@htmx_view('appointments/pages/detail.html', 'appointments/partials/detail.html')
+def appointment_detail(request, pk):
+    """Appointment detail with history."""
+    hub = _hub(request)
+    apt = Appointment.objects.filter(hub_id=hub, is_deleted=False, pk=pk).first()
+    if not apt:
+        return JsonResponse({'error': 'Not found'}, status=404)
+
+    history = apt.history.all()[:20]
+    return {'appointment': apt, 'history': history}
+
+
+@login_required
+@with_module_nav('appointments', 'appointments')
+@htmx_view('appointments/pages/form.html', 'appointments/partials/form.html')
 def appointment_create(request):
-    """Create a new appointment."""
+    """Create an appointment."""
+    hub = _hub(request)
+    employee = _employee(request)
+
     if request.method == 'POST':
-        try:
-            data = json.loads(request.body) if request.content_type == 'application/json' else request.POST
-
-            start_datetime = timezone.make_aware(
-                datetime.strptime(data.get('start_datetime'), '%Y-%m-%dT%H:%M')
-            )
-
-            appointment, error = AppointmentService.create_appointment(
-                customer_name=data.get('customer_name'),
-                service_name=data.get('service_name'),
-                start_datetime=start_datetime,
-                duration_minutes=int(data.get('duration_minutes', 60)),
-                customer_id=int(data['customer_id']) if data.get('customer_id') else None,
-                customer_phone=data.get('customer_phone', ''),
-                customer_email=data.get('customer_email', ''),
-                staff_id=int(data['staff_id']) if data.get('staff_id') else None,
-                staff_name=data.get('staff_name', ''),
-                service_id=int(data['service_id']) if data.get('service_id') else None,
-                service_price=Decimal(data.get('service_price', '0')),
-                notes=data.get('notes', ''),
-                created_by_id=request.session.get('local_user_id'),
-            )
-
-            if error:
-                return JsonResponse({'success': False, 'error': error}, status=400)
-
+        form = AppointmentForm(request.POST)
+        if form.is_valid():
+            apt = form.save(commit=False)
+            apt.hub_id = hub
+            apt.save()
+            _log(apt, 'created', 'Appointment created', performed_by=employee)
             return JsonResponse({
                 'success': True,
-                'appointment_id': appointment.id,
-                'appointment_number': appointment.appointment_number
+                'id': str(apt.pk),
+                'appointment_number': apt.appointment_number,
             })
+        return JsonResponse({'success': False, 'errors': form.errors}, status=400)
 
-        except Exception as e:
-            return JsonResponse({'success': False, 'error': str(e)}, status=400)
-
-    config = AppointmentsConfig.get_config()
-
-    return render(request, 'appointments/appointment_form.html', {
-        'mode': 'create',
-        'config': config,
-    })
+    form = AppointmentForm()
+    settings = AppointmentsSettings.get_settings(hub)
+    return {'form': form, 'mode': 'create', 'settings': settings}
 
 
 @login_required
-def appointment_detail(request, pk):
-    """View appointment details."""
-    appointment = get_object_or_404(Appointment, pk=pk)
-    history = appointment.history.all()[:20]
-
-    return render(request, 'appointments/appointment_detail.html', {
-        'appointment': appointment,
-        'history': history,
-    })
-
-
-@login_required
+@with_module_nav('appointments', 'appointments')
+@htmx_view('appointments/pages/form.html', 'appointments/partials/form.html')
 def appointment_edit(request, pk):
     """Edit an appointment."""
-    appointment = get_object_or_404(Appointment, pk=pk)
+    hub = _hub(request)
+    apt = Appointment.objects.filter(hub_id=hub, is_deleted=False, pk=pk).first()
+    if not apt:
+        return JsonResponse({'error': 'Not found'}, status=404)
 
     if request.method == 'POST':
-        try:
-            data = json.loads(request.body) if request.content_type == 'application/json' else request.POST
-
-            update_data = {}
-            if data.get('customer_name'):
-                update_data['customer_name'] = data['customer_name']
-            if data.get('customer_phone'):
-                update_data['customer_phone'] = data['customer_phone']
-            if data.get('customer_email'):
-                update_data['customer_email'] = data['customer_email']
-            if data.get('notes'):
-                update_data['notes'] = data['notes']
-            if data.get('internal_notes'):
-                update_data['internal_notes'] = data['internal_notes']
-
-            if data.get('start_datetime'):
-                update_data['start_datetime'] = timezone.make_aware(
-                    datetime.strptime(data['start_datetime'], '%Y-%m-%dT%H:%M')
-                )
-            if data.get('duration_minutes'):
-                update_data['duration_minutes'] = int(data['duration_minutes'])
-
-            success, error = AppointmentService.update_appointment(appointment, **update_data)
-
-            if not success:
-                return JsonResponse({'success': False, 'error': error}, status=400)
-
+        form = AppointmentForm(request.POST, instance=apt)
+        if form.is_valid():
+            form.save()
+            _log(apt, 'rescheduled', 'Appointment updated', performed_by=_employee(request))
             return JsonResponse({'success': True})
+        return JsonResponse({'success': False, 'errors': form.errors}, status=400)
 
-        except Exception as e:
-            return JsonResponse({'success': False, 'error': str(e)}, status=400)
-
-    return render(request, 'appointments/appointment_form.html', {
-        'mode': 'edit',
-        'appointment': appointment,
-    })
+    form = AppointmentForm(instance=apt)
+    return {'form': form, 'appointment': apt, 'mode': 'edit'}
 
 
 @login_required
 @require_POST
 def appointment_delete(request, pk):
-    """Delete an appointment."""
-    appointment = get_object_or_404(Appointment, pk=pk)
+    """Soft delete an appointment."""
+    hub = _hub(request)
+    apt = Appointment.objects.filter(hub_id=hub, is_deleted=False, pk=pk).first()
+    if not apt:
+        return JsonResponse({'error': 'Not found'}, status=404)
 
-    # Log before delete
-    AppointmentHistory.log(
-        appointment,
-        'cancelled',
-        'Appointment deleted',
-        performed_by_id=request.session.get('local_user_id')
-    )
-
-    appointment.delete()
-
+    _log(apt, 'cancelled', 'Appointment deleted', performed_by=_employee(request))
+    apt.is_deleted = True
+    apt.deleted_at = timezone.now()
+    apt.save(update_fields=['is_deleted', 'deleted_at', 'updated_at'])
     return JsonResponse({'success': True})
 
 
 # =============================================================================
-# APPOINTMENT ACTIONS
+# Appointment Actions
 # =============================================================================
 
 @login_required
 @require_POST
 def appointment_confirm(request, pk):
-    """Confirm a pending appointment."""
-    appointment = get_object_or_404(Appointment, pk=pk)
-    user_id = request.session.get('local_user_id')
+    hub = _hub(request)
+    apt = Appointment.objects.filter(hub_id=hub, is_deleted=False, pk=pk).first()
+    if not apt:
+        return JsonResponse({'error': 'Not found'}, status=404)
 
-    success = AppointmentService.confirm_appointment(appointment, user_id)
+    if apt.confirm():
+        _log(apt, 'confirmed', performed_by=_employee(request))
+        return JsonResponse({'success': True, 'status': apt.status})
+    return JsonResponse({'error': 'Cannot confirm'}, status=400)
 
-    if success:
-        return JsonResponse({'success': True, 'status': appointment.status})
-    return JsonResponse({'success': False, 'error': 'Cannot confirm this appointment'}, status=400)
+
+@login_required
+@require_POST
+def appointment_start(request, pk):
+    hub = _hub(request)
+    apt = Appointment.objects.filter(hub_id=hub, is_deleted=False, pk=pk).first()
+    if not apt:
+        return JsonResponse({'error': 'Not found'}, status=404)
+
+    if apt.start():
+        _log(apt, 'started', performed_by=_employee(request))
+        return JsonResponse({'success': True, 'status': apt.status})
+    return JsonResponse({'error': 'Cannot start'}, status=400)
 
 
 @login_required
 @require_POST
 def appointment_cancel(request, pk):
-    """Cancel an appointment."""
-    appointment = get_object_or_404(Appointment, pk=pk)
-    user_id = request.session.get('local_user_id')
+    hub = _hub(request)
+    apt = Appointment.objects.filter(hub_id=hub, is_deleted=False, pk=pk).first()
+    if not apt:
+        return JsonResponse({'error': 'Not found'}, status=404)
 
     try:
-        data = json.loads(request.body) if request.content_type == 'application/json' else request.POST
-        reason = data.get('reason', '')
-    except:
-        reason = ''
+        data = json.loads(request.body) if request.body else {}
+    except json.JSONDecodeError:
+        data = {}
+    reason = data.get('reason', '')
 
-    success = AppointmentService.cancel_appointment(appointment, reason, user_id)
-
-    if success:
-        return JsonResponse({'success': True, 'status': appointment.status})
-    return JsonResponse({'success': False, 'error': 'Cannot cancel this appointment'}, status=400)
+    if apt.cancel(reason):
+        _log(apt, 'cancelled', reason, performed_by=_employee(request))
+        return JsonResponse({'success': True, 'status': apt.status})
+    return JsonResponse({'error': 'Cannot cancel'}, status=400)
 
 
 @login_required
 @require_POST
 def appointment_complete(request, pk):
-    """Mark appointment as completed."""
-    appointment = get_object_or_404(Appointment, pk=pk)
-    user_id = request.session.get('local_user_id')
+    hub = _hub(request)
+    apt = Appointment.objects.filter(hub_id=hub, is_deleted=False, pk=pk).first()
+    if not apt:
+        return JsonResponse({'error': 'Not found'}, status=404)
 
-    success = AppointmentService.complete_appointment(appointment, user_id)
-
-    if success:
-        return JsonResponse({'success': True, 'status': appointment.status})
-    return JsonResponse({'success': False, 'error': 'Cannot complete this appointment'}, status=400)
+    if apt.complete():
+        _log(apt, 'completed', performed_by=_employee(request))
+        return JsonResponse({'success': True, 'status': apt.status})
+    return JsonResponse({'error': 'Cannot complete'}, status=400)
 
 
 @login_required
 @require_POST
 def appointment_no_show(request, pk):
-    """Mark customer as no-show."""
-    appointment = get_object_or_404(Appointment, pk=pk)
-    user_id = request.session.get('local_user_id')
+    hub = _hub(request)
+    apt = Appointment.objects.filter(hub_id=hub, is_deleted=False, pk=pk).first()
+    if not apt:
+        return JsonResponse({'error': 'Not found'}, status=404)
 
-    success = AppointmentService.mark_no_show(appointment, user_id)
-
-    if success:
-        return JsonResponse({'success': True, 'status': appointment.status})
-    return JsonResponse({'success': False, 'error': 'Cannot mark as no-show'}, status=400)
+    if apt.mark_no_show():
+        _log(apt, 'no_show', performed_by=_employee(request))
+        return JsonResponse({'success': True, 'status': apt.status})
+    return JsonResponse({'error': 'Cannot mark as no-show'}, status=400)
 
 
 @login_required
 @require_POST
 def appointment_reschedule(request, pk):
-    """Reschedule an appointment."""
-    appointment = get_object_or_404(Appointment, pk=pk)
-    user_id = request.session.get('local_user_id')
+    hub = _hub(request)
+    apt = Appointment.objects.filter(hub_id=hub, is_deleted=False, pk=pk).first()
+    if not apt:
+        return JsonResponse({'error': 'Not found'}, status=404)
 
     try:
-        data = json.loads(request.body) if request.content_type == 'application/json' else request.POST
+        data = json.loads(request.body) if request.body else {}
+    except json.JSONDecodeError:
+        data = request.POST.dict()
 
-        new_datetime = timezone.make_aware(
-            datetime.strptime(data.get('start_datetime'), '%Y-%m-%dT%H:%M')
-        )
-        new_duration = int(data['duration_minutes']) if data.get('duration_minutes') else None
+    new_dt_str = data.get('start_datetime')
+    if not new_dt_str:
+        return JsonResponse({'error': 'start_datetime required'}, status=400)
 
-        success, error = AppointmentService.reschedule_appointment(
-            appointment, new_datetime, new_duration, user_id
-        )
+    new_datetime = timezone.make_aware(datetime.strptime(new_dt_str, '%Y-%m-%dT%H:%M'))
+    new_duration = int(data['duration_minutes']) if data.get('duration_minutes') else None
 
-        if success:
-            return JsonResponse({'success': True})
-        return JsonResponse({'success': False, 'error': error}, status=400)
-
-    except Exception as e:
-        return JsonResponse({'success': False, 'error': str(e)}, status=400)
+    old_dt = apt.start_datetime.isoformat()
+    if apt.reschedule(new_datetime, new_duration):
+        _log(apt, 'rescheduled', f'From {old_dt}', performed_by=_employee(request),
+             old_value={'start_datetime': old_dt}, new_value={'start_datetime': new_datetime.isoformat()})
+        return JsonResponse({'success': True})
+    return JsonResponse({'error': 'Cannot reschedule'}, status=400)
 
 
 # =============================================================================
-# AVAILABILITY
+# Availability
 # =============================================================================
 
 @login_required
-@require_GET
+@with_module_nav('appointments', 'calendar')
+@htmx_view('appointments/pages/availability.html', 'appointments/partials/availability.html')
 def check_availability(request):
-    """Check availability page."""
-    return render(request, 'appointments/availability.html', {
-        'config': AppointmentsConfig.get_config(),
-    })
+    hub = _hub(request)
+    settings = AppointmentsSettings.get_settings(hub)
+    return {'settings': settings}
 
 
 @login_required
 @require_GET
 def get_available_slots(request):
     """Get available time slots for a date."""
+    hub = _hub(request)
     date_str = request.GET.get('date')
     duration = int(request.GET.get('duration', 60))
-    staff_id = request.GET.get('staff_id')
+    staff_id = request.GET.get('staff')
 
     try:
         target_date = datetime.strptime(date_str, '%Y-%m-%d').date()
     except (ValueError, TypeError):
         return JsonResponse({'error': 'Invalid date'}, status=400)
 
-    slots = AppointmentService.get_available_slots(
-        target_date,
-        duration,
-        staff_id=int(staff_id) if staff_id else None
+    settings = AppointmentsSettings.get_settings(hub)
+
+    # Get default schedule
+    schedule = Schedule.objects.filter(hub_id=hub, is_deleted=False, is_default=True, is_active=True).first()
+    if not schedule:
+        schedule = Schedule.objects.filter(hub_id=hub, is_deleted=False, is_active=True).first()
+
+    if not schedule:
+        return JsonResponse({'slots': []})
+
+    day_of_week = target_date.weekday()
+    time_slots = schedule.get_time_slots(day_of_week)
+
+    # Get existing appointments
+    existing = Appointment.objects.filter(
+        hub_id=hub, is_deleted=False,
+        start_datetime__date=target_date,
+        status__in=['pending', 'confirmed', 'in_progress'],
     )
+    if staff_id:
+        existing = existing.filter(staff_id=staff_id)
+
+    # Get blocked times
+    blocked = BlockedTime.objects.filter(
+        hub_id=hub, is_deleted=False,
+        start_datetime__date__lte=target_date,
+        end_datetime__date__gte=target_date,
+    )
+    if staff_id:
+        blocked = blocked.filter(Q(staff_id__isnull=True) | Q(staff_id=staff_id))
+
+    slots = []
+    interval = timedelta(minutes=settings.slot_interval)
+    apt_duration = timedelta(minutes=duration)
+
+    for ts in time_slots:
+        current_time = timezone.make_aware(datetime.combine(target_date, ts.start_time))
+        end_time = timezone.make_aware(datetime.combine(target_date, ts.end_time))
+
+        while current_time + apt_duration <= end_time:
+            slot_end = current_time + apt_duration
+
+            # Check conflicts
+            is_available = True
+            for apt in existing:
+                if current_time < apt.end_datetime and slot_end > apt.start_datetime:
+                    is_available = False
+                    break
+
+            if is_available:
+                for bt in blocked:
+                    if bt.conflicts_with(current_time, slot_end):
+                        is_available = False
+                        break
+
+            if is_available:
+                slots.append({
+                    'start': current_time.strftime('%H:%M'),
+                    'end': slot_end.strftime('%H:%M'),
+                })
+
+            current_time += interval
 
     return JsonResponse({'slots': slots})
 
 
 # =============================================================================
-# SCHEDULES
+# Schedules
 # =============================================================================
 
 @login_required
-@module_view("appointments", "schedules")
+@with_module_nav('appointments', 'schedules')
+@htmx_view('appointments/pages/schedules.html', 'appointments/partials/schedules.html')
 def schedules_list(request):
-    """List all schedules."""
-    schedules = Schedule.objects.all().prefetch_related('time_slots')
-
-    return {
-        'schedules': schedules,
-        'days_of_week': Schedule.DAYS_OF_WEEK,
-    }
+    hub = _hub(request)
+    schedules = Schedule.objects.filter(hub_id=hub, is_deleted=False).prefetch_related('time_slots')
+    return {'schedules': schedules, 'days_of_week': Schedule.DAYS_OF_WEEK}
 
 
 @login_required
-def schedule_create(request):
-    """Create a new schedule."""
-    if request.method == 'POST':
-        try:
-            data = json.loads(request.body) if request.content_type == 'application/json' else request.POST
-
-            schedule = AppointmentService.create_schedule(
-                name=data.get('name'),
-                description=data.get('description', ''),
-                is_default=data.get('is_default', False)
-            )
-
-            return JsonResponse({
-                'success': True,
-                'schedule_id': schedule.id
-            })
-
-        except Exception as e:
-            return JsonResponse({'success': False, 'error': str(e)}, status=400)
-
-    return render(request, 'appointments/schedule_form.html', {
-        'mode': 'create',
-        'days_of_week': Schedule.DAYS_OF_WEEK,
-    })
-
-
-@login_required
+@with_module_nav('appointments', 'schedules')
+@htmx_view('appointments/pages/schedule_detail.html', 'appointments/partials/schedule_detail.html')
 def schedule_detail(request, pk):
-    """View schedule details with time slots."""
-    schedule = get_object_or_404(Schedule, pk=pk)
-    time_slots = schedule.time_slots.all().order_by('day_of_week', 'start_time')
+    hub = _hub(request)
+    schedule = Schedule.objects.filter(hub_id=hub, is_deleted=False, pk=pk).first()
+    if not schedule:
+        return JsonResponse({'error': 'Not found'}, status=404)
 
-    # Group by day
+    time_slots = schedule.time_slots.filter(is_deleted=False).order_by('day_of_week', 'start_time')
     slots_by_day = {}
     for day, day_name in Schedule.DAYS_OF_WEEK:
         slots_by_day[day] = {
-            'name': day_name,
-            'slots': [s for s in time_slots if s.day_of_week == day]
+            'name': str(day_name),
+            'slots': [s for s in time_slots if s.day_of_week == day],
         }
 
-    return render(request, 'appointments/schedule_detail.html', {
-        'schedule': schedule,
-        'slots_by_day': slots_by_day,
-        'days_of_week': Schedule.DAYS_OF_WEEK,
-    })
+    return {'schedule': schedule, 'slots_by_day': slots_by_day, 'days_of_week': Schedule.DAYS_OF_WEEK}
+
+
+@login_required
+def schedule_add(request):
+    hub = _hub(request)
+    if request.method == 'POST':
+        form = ScheduleForm(request.POST)
+        if form.is_valid():
+            schedule = form.save(commit=False)
+            schedule.hub_id = hub
+            schedule.save()
+            return JsonResponse({'success': True, 'id': str(schedule.pk), 'name': schedule.name})
+        return JsonResponse({'success': False, 'errors': form.errors}, status=400)
+
+    form = ScheduleForm()
+    return JsonResponse({'form': 'render'})
 
 
 @login_required
 def schedule_edit(request, pk):
-    """Edit a schedule."""
-    schedule = get_object_or_404(Schedule, pk=pk)
+    hub = _hub(request)
+    schedule = Schedule.objects.filter(hub_id=hub, is_deleted=False, pk=pk).first()
+    if not schedule:
+        return JsonResponse({'error': 'Not found'}, status=404)
 
     if request.method == 'POST':
-        try:
-            data = json.loads(request.body) if request.content_type == 'application/json' else request.POST
-
-            schedule.name = data.get('name', schedule.name)
-            schedule.description = data.get('description', schedule.description)
-            schedule.is_default = data.get('is_default', schedule.is_default)
-            schedule.is_active = data.get('is_active', schedule.is_active)
-            schedule.save()
-
+        form = ScheduleForm(request.POST, instance=schedule)
+        if form.is_valid():
+            form.save()
             return JsonResponse({'success': True})
+        return JsonResponse({'success': False, 'errors': form.errors}, status=400)
 
-        except Exception as e:
-            return JsonResponse({'success': False, 'error': str(e)}, status=400)
-
-    return render(request, 'appointments/schedule_form.html', {
-        'mode': 'edit',
-        'schedule': schedule,
-        'days_of_week': Schedule.DAYS_OF_WEEK,
-    })
+    form = ScheduleForm(instance=schedule)
+    return JsonResponse({'form': 'render'})
 
 
 @login_required
 @require_POST
 def schedule_delete(request, pk):
-    """Delete a schedule."""
-    schedule = get_object_or_404(Schedule, pk=pk)
-    schedule.delete()
+    hub = _hub(request)
+    schedule = Schedule.objects.filter(hub_id=hub, is_deleted=False, pk=pk).first()
+    if not schedule:
+        return JsonResponse({'error': 'Not found'}, status=404)
 
+    schedule.is_deleted = True
+    schedule.deleted_at = timezone.now()
+    schedule.save(update_fields=['is_deleted', 'deleted_at', 'updated_at'])
     return JsonResponse({'success': True})
-
-
-@login_required
-def schedule_slots(request, pk):
-    """Manage time slots for a schedule."""
-    schedule = get_object_or_404(Schedule, pk=pk)
-    time_slots = schedule.time_slots.all().order_by('day_of_week', 'start_time')
-
-    return render(request, 'appointments/schedule_slots.html', {
-        'schedule': schedule,
-        'time_slots': time_slots,
-        'days_of_week': Schedule.DAYS_OF_WEEK,
-    })
 
 
 @login_required
 @require_POST
 def add_time_slot(request, pk):
-    """Add a time slot to a schedule."""
-    schedule = get_object_or_404(Schedule, pk=pk)
+    hub = _hub(request)
+    schedule = Schedule.objects.filter(hub_id=hub, is_deleted=False, pk=pk).first()
+    if not schedule:
+        return JsonResponse({'error': 'Not found'}, status=404)
 
-    try:
-        data = json.loads(request.body) if request.content_type == 'application/json' else request.POST
-
-        day_of_week = int(data.get('day_of_week'))
-        start_time = datetime.strptime(data.get('start_time'), '%H:%M').time()
-        end_time = datetime.strptime(data.get('end_time'), '%H:%M').time()
-
-        slot, error = AppointmentService.add_time_slot(
-            schedule, day_of_week, start_time, end_time
-        )
-
-        if error:
-            return JsonResponse({'success': False, 'error': error}, status=400)
-
-        return JsonResponse({
-            'success': True,
-            'slot_id': slot.id
-        })
-
-    except Exception as e:
-        return JsonResponse({'success': False, 'error': str(e)}, status=400)
+    form = ScheduleTimeSlotForm(request.POST)
+    if form.is_valid():
+        slot = form.save(commit=False)
+        slot.hub_id = hub
+        slot.schedule = schedule
+        slot.save()
+        return JsonResponse({'success': True, 'id': str(slot.pk)})
+    return JsonResponse({'success': False, 'errors': form.errors}, status=400)
 
 
 @login_required
 @require_POST
-def delete_time_slot(request, slot_id):
-    """Delete a time slot."""
-    slot = get_object_or_404(ScheduleTimeSlot, pk=slot_id)
-    AppointmentService.remove_time_slot(slot)
+def delete_time_slot(request, pk):
+    hub = _hub(request)
+    slot = ScheduleTimeSlot.objects.filter(hub_id=hub, is_deleted=False, pk=pk).first()
+    if not slot:
+        return JsonResponse({'error': 'Not found'}, status=404)
 
+    slot.is_deleted = True
+    slot.deleted_at = timezone.now()
+    slot.save(update_fields=['is_deleted', 'deleted_at', 'updated_at'])
     return JsonResponse({'success': True})
 
 
 # =============================================================================
-# BLOCKED TIMES
+# Blocked Times
 # =============================================================================
 
 @login_required
+@with_module_nav('appointments', 'schedules')
+@htmx_view('appointments/pages/blocked.html', 'appointments/partials/blocked.html')
 def blocked_times_list(request):
-    """List blocked time periods."""
-    blocked_times = BlockedTime.objects.filter(
-        end_datetime__gte=timezone.now()
+    hub = _hub(request)
+    blocked = BlockedTime.objects.filter(
+        hub_id=hub, is_deleted=False,
+        end_datetime__gte=timezone.now(),
     ).order_by('start_datetime')
 
-    return render(request, 'appointments/blocked_times.html', {
-        'blocked_times': blocked_times,
-        'block_types': BlockedTime.BLOCK_TYPE_CHOICES,
-    })
+    return {'blocked_times': blocked, 'block_types': BlockedTime.BLOCK_TYPE_CHOICES}
 
 
 @login_required
-def blocked_time_create(request):
-    """Create a blocked time period."""
+def blocked_time_add(request):
+    hub = _hub(request)
     if request.method == 'POST':
-        try:
-            data = json.loads(request.body) if request.content_type == 'application/json' else request.POST
+        form = BlockedTimeForm(request.POST)
+        if form.is_valid():
+            bt = form.save(commit=False)
+            bt.hub_id = hub
+            bt.save()
+            return JsonResponse({'success': True, 'id': str(bt.pk)})
+        return JsonResponse({'success': False, 'errors': form.errors}, status=400)
 
-            start_datetime = timezone.make_aware(
-                datetime.strptime(data.get('start_datetime'), '%Y-%m-%dT%H:%M')
-            )
-            end_datetime = timezone.make_aware(
-                datetime.strptime(data.get('end_datetime'), '%Y-%m-%dT%H:%M')
-            )
-
-            blocked, error = AppointmentService.create_blocked_time(
-                title=data.get('title'),
-                start_datetime=start_datetime,
-                end_datetime=end_datetime,
-                block_type=data.get('block_type', 'other'),
-                staff_id=int(data['staff_id']) if data.get('staff_id') else None,
-                reason=data.get('reason', ''),
-                all_day=data.get('all_day', False)
-            )
-
-            if error:
-                return JsonResponse({'success': False, 'error': error}, status=400)
-
-            return JsonResponse({
-                'success': True,
-                'blocked_id': blocked.id
-            })
-
-        except Exception as e:
-            return JsonResponse({'success': False, 'error': str(e)}, status=400)
-
-    return render(request, 'appointments/blocked_time_form.html', {
-        'block_types': BlockedTime.BLOCK_TYPE_CHOICES,
-    })
+    form = BlockedTimeForm()
+    return JsonResponse({'form': 'render'})
 
 
 @login_required
 @require_POST
 def blocked_time_delete(request, pk):
-    """Delete a blocked time period."""
-    blocked = get_object_or_404(BlockedTime, pk=pk)
-    AppointmentService.remove_blocked_time(blocked)
+    hub = _hub(request)
+    bt = BlockedTime.objects.filter(hub_id=hub, is_deleted=False, pk=pk).first()
+    if not bt:
+        return JsonResponse({'error': 'Not found'}, status=404)
 
+    bt.is_deleted = True
+    bt.deleted_at = timezone.now()
+    bt.save(update_fields=['is_deleted', 'deleted_at', 'updated_at'])
     return JsonResponse({'success': True})
 
 
 # =============================================================================
-# RECURRING APPOINTMENTS
+# Recurring Appointments
 # =============================================================================
 
 @login_required
+@with_module_nav('appointments', 'recurring')
+@htmx_view('appointments/pages/recurring.html', 'appointments/partials/recurring.html')
 def recurring_list(request):
-    """List recurring appointment templates."""
-    recurring = RecurringAppointment.objects.filter(is_active=True)
-
-    return render(request, 'appointments/recurring_list.html', {
-        'recurring_appointments': recurring,
-        'frequencies': RecurringAppointment.FREQUENCY_CHOICES,
-    })
+    hub = _hub(request)
+    recurring = RecurringAppointment.objects.filter(hub_id=hub, is_deleted=False, is_active=True)
+    return {'recurring_appointments': recurring, 'frequencies': RecurringAppointment.FREQUENCY_CHOICES}
 
 
 @login_required
-def recurring_create(request):
-    """Create a recurring appointment template."""
+def recurring_add(request):
+    hub = _hub(request)
     if request.method == 'POST':
-        try:
-            data = json.loads(request.body) if request.content_type == 'application/json' else request.POST
+        form = RecurringAppointmentForm(request.POST)
+        if form.is_valid():
+            recurring = form.save(commit=False)
+            recurring.hub_id = hub
+            recurring.save()
+            return JsonResponse({'success': True, 'id': str(recurring.pk)})
+        return JsonResponse({'success': False, 'errors': form.errors}, status=400)
 
-            start_date = datetime.strptime(data.get('start_date'), '%Y-%m-%d').date()
-            time_of_day = datetime.strptime(data.get('time'), '%H:%M').time()
-            end_date = None
-            if data.get('end_date'):
-                end_date = datetime.strptime(data.get('end_date'), '%Y-%m-%d').date()
-
-            recurring = AppointmentService.create_recurring_appointment(
-                customer_name=data.get('customer_name'),
-                service_name=data.get('service_name'),
-                frequency=data.get('frequency'),
-                time_of_day=time_of_day,
-                duration_minutes=int(data.get('duration_minutes', 60)),
-                start_date=start_date,
-                customer_id=int(data['customer_id']) if data.get('customer_id') else None,
-                service_id=int(data['service_id']) if data.get('service_id') else None,
-                staff_id=int(data['staff_id']) if data.get('staff_id') else None,
-                staff_name=data.get('staff_name', ''),
-                day_of_week=int(data['day_of_week']) if data.get('day_of_week') else None,
-                end_date=end_date,
-                max_occurrences=int(data['max_occurrences']) if data.get('max_occurrences') else None
-            )
-
-            return JsonResponse({
-                'success': True,
-                'recurring_id': recurring.id
-            })
-
-        except Exception as e:
-            return JsonResponse({'success': False, 'error': str(e)}, status=400)
-
-    return render(request, 'appointments/recurring_form.html', {
-        'frequencies': RecurringAppointment.FREQUENCY_CHOICES,
-        'days_of_week': Schedule.DAYS_OF_WEEK,
-    })
+    form = RecurringAppointmentForm()
+    return JsonResponse({'form': 'render'})
 
 
 @login_required
+@with_module_nav('appointments', 'recurring')
+@htmx_view('appointments/pages/recurring_detail.html', 'appointments/partials/recurring_detail.html')
 def recurring_detail(request, pk):
-    """View recurring appointment details."""
-    recurring = get_object_or_404(RecurringAppointment, pk=pk)
+    hub = _hub(request)
+    recurring = RecurringAppointment.objects.filter(hub_id=hub, is_deleted=False, pk=pk).first()
+    if not recurring:
+        return JsonResponse({'error': 'Not found'}, status=404)
 
-    # Get generated appointments
     generated = Appointment.objects.filter(
+        hub_id=hub, is_deleted=False,
         customer_id=recurring.customer_id,
         service_id=recurring.service_id,
     ).order_by('-start_datetime')[:10]
 
-    return render(request, 'appointments/recurring_detail.html', {
-        'recurring': recurring,
-        'generated_appointments': generated,
-    })
+    return {'recurring': recurring, 'generated_appointments': generated}
 
 
 @login_required
 @require_POST
 def recurring_delete(request, pk):
-    """Delete a recurring appointment template."""
-    recurring = get_object_or_404(RecurringAppointment, pk=pk)
-    recurring.is_active = False
-    recurring.save()
+    hub = _hub(request)
+    recurring = RecurringAppointment.objects.filter(hub_id=hub, is_deleted=False, pk=pk).first()
+    if not recurring:
+        return JsonResponse({'error': 'Not found'}, status=404)
 
+    recurring.is_active = False
+    recurring.save(update_fields=['is_active', 'updated_at'])
     return JsonResponse({'success': True})
 
 
@@ -728,101 +706,183 @@ def recurring_delete(request, pk):
 @require_POST
 def recurring_generate(request, pk):
     """Generate appointments from a recurring template."""
-    recurring = get_object_or_404(RecurringAppointment, pk=pk)
-    user_id = request.session.get('local_user_id')
+    hub = _hub(request)
+    recurring = RecurringAppointment.objects.filter(hub_id=hub, is_deleted=False, pk=pk).first()
+    if not recurring:
+        return JsonResponse({'error': 'Not found'}, status=404)
 
     try:
-        data = json.loads(request.body) if request.content_type == 'application/json' else request.POST
-        until_date = datetime.strptime(data.get('until_date'), '%Y-%m-%d').date()
+        data = json.loads(request.body) if request.body else {}
+    except json.JSONDecodeError:
+        data = request.POST.dict()
 
-        appointments = AppointmentService.generate_recurring_instances(
-            recurring, until_date, user_id
-        )
+    until_str = data.get('until_date')
+    if not until_str:
+        return JsonResponse({'error': 'until_date required'}, status=400)
 
-        return JsonResponse({
-            'success': True,
-            'count': len(appointments)
-        })
+    until_date = datetime.strptime(until_str, '%Y-%m-%d').date()
+    employee = _employee(request)
 
-    except Exception as e:
-        return JsonResponse({'success': False, 'error': str(e)}, status=400)
+    # Generate occurrences
+    current_date = recurring.start_date
+    count = 0
+    occurrences_count = 0
+
+    while current_date <= until_date:
+        if recurring.end_date and current_date > recurring.end_date:
+            break
+        if recurring.max_occurrences and count >= recurring.max_occurrences:
+            break
+
+        start_dt = timezone.make_aware(datetime.combine(current_date, recurring.time))
+
+        # Check no duplicate
+        exists = Appointment.objects.filter(
+            hub_id=hub, is_deleted=False,
+            start_datetime=start_dt,
+            customer_id=recurring.customer_id,
+            service_id=recurring.service_id,
+        ).exists()
+
+        if not exists:
+            apt = Appointment.objects.create(
+                hub_id=hub,
+                customer=recurring.customer,
+                customer_name=recurring.customer_name,
+                service=recurring.service,
+                service_name=recurring.service_name,
+                staff=recurring.staff,
+                staff_name=recurring.staff_name,
+                start_datetime=start_dt,
+                duration_minutes=recurring.duration_minutes,
+                status='pending',
+            )
+            _log(apt, 'created', f'Generated from recurring #{recurring.pk}', performed_by=employee)
+            occurrences_count += 1
+
+        count += 1
+
+        if recurring.frequency == 'daily':
+            current_date += timedelta(days=1)
+        elif recurring.frequency == 'weekly':
+            current_date += timedelta(weeks=1)
+        elif recurring.frequency == 'biweekly':
+            current_date += timedelta(weeks=2)
+        elif recurring.frequency == 'monthly':
+            if current_date.month == 12:
+                current_date = current_date.replace(year=current_date.year + 1, month=1)
+            else:
+                current_date = current_date.replace(month=current_date.month + 1)
+
+    return JsonResponse({'success': True, 'count': occurrences_count})
 
 
 # =============================================================================
-# SETTINGS
+# Settings
 # =============================================================================
 
 @login_required
-@module_view("appointments", "settings")
-def settings_view(request):
-    """Module settings page."""
-    config = AppointmentsConfig.get_config()
-
-    return {
-        'config': config,
-    }
+@with_module_nav('appointments', 'settings')
+@htmx_view('appointments/pages/settings.html', 'appointments/partials/settings.html')
+def settings(request):
+    hub = _hub(request)
+    s = AppointmentsSettings.get_settings(hub)
+    form = AppointmentsSettingsForm(instance=s)
+    return {'settings': s, 'form': form}
 
 
 @login_required
 @require_POST
 def settings_save(request):
-    """Save module settings."""
-    config = AppointmentsConfig.get_config()
+    hub = _hub(request)
+    s = AppointmentsSettings.get_settings(hub)
 
     try:
-        data = json.loads(request.body) if request.content_type == 'application/json' else request.POST
+        data = json.loads(request.body) if request.body else {}
+    except json.JSONDecodeError:
+        data = request.POST.dict()
 
-        if 'default_duration' in data:
-            config.default_duration = int(data['default_duration'])
-        if 'min_booking_notice' in data:
-            config.min_booking_notice = int(data['min_booking_notice'])
-        if 'max_advance_booking' in data:
-            config.max_advance_booking = int(data['max_advance_booking'])
-        if 'reminder_hours_before' in data:
-            config.reminder_hours_before = int(data['reminder_hours_before'])
-        if 'cancellation_notice_hours' in data:
-            config.cancellation_notice_hours = int(data['cancellation_notice_hours'])
-        if 'calendar_start_hour' in data:
-            config.calendar_start_hour = int(data['calendar_start_hour'])
-        if 'calendar_end_hour' in data:
-            config.calendar_end_hour = int(data['calendar_end_hour'])
-        if 'slot_interval' in data:
-            config.slot_interval = int(data['slot_interval'])
+    int_fields = [
+        'default_duration', 'min_booking_notice', 'max_advance_booking',
+        'reminder_hours_before', 'cancellation_notice_hours',
+        'calendar_start_hour', 'calendar_end_hour', 'slot_interval',
+    ]
+    for field in int_fields:
+        if field in data:
+            setattr(s, field, int(data[field]))
 
-        config.save()
-
-        return JsonResponse({'success': True})
-
-    except Exception as e:
-        return JsonResponse({'success': False, 'error': str(e)}, status=400)
+    s.save()
+    return JsonResponse({'success': True})
 
 
 @login_required
 @require_POST
 def settings_toggle(request):
-    """Toggle boolean settings."""
-    config = AppointmentsConfig.get_config()
+    hub = _hub(request)
+    s = AppointmentsSettings.get_settings(hub)
 
     try:
-        data = json.loads(request.body) if request.content_type == 'application/json' else request.POST
+        data = json.loads(request.body) if request.body else {}
+    except json.JSONDecodeError:
+        data = request.POST.dict()
 
-        field = data.get('field')
-        valid_fields = [
-            'allow_overlapping', 'send_reminders',
-            'allow_customer_cancellation'
-        ]
+    field = data.get('field', '')
+    toggleable = ['allow_overlapping', 'send_reminders', 'allow_customer_cancellation']
 
-        if field not in valid_fields:
-            return JsonResponse({'success': False, 'error': 'Invalid field'}, status=400)
+    if field not in toggleable:
+        return JsonResponse({'error': 'Invalid field'}, status=400)
 
-        current_value = getattr(config, field)
-        setattr(config, field, not current_value)
-        config.save()
+    setattr(s, field, not getattr(s, field))
+    s.save()
+    return JsonResponse({'success': True, 'value': getattr(s, field)})
 
-        return JsonResponse({
-            'success': True,
-            'value': getattr(config, field)
-        })
 
-    except Exception as e:
-        return JsonResponse({'success': False, 'error': str(e)}, status=400)
+@login_required
+@require_POST
+def settings_input(request):
+    hub = _hub(request)
+    s = AppointmentsSettings.get_settings(hub)
+
+    try:
+        data = json.loads(request.body) if request.body else {}
+    except json.JSONDecodeError:
+        data = request.POST.dict()
+
+    field = data.get('field', '')
+    value = data.get('value', '')
+
+    int_fields = [
+        'default_duration', 'min_booking_notice', 'max_advance_booking',
+        'reminder_hours_before', 'cancellation_notice_hours',
+        'calendar_start_hour', 'calendar_end_hour', 'slot_interval',
+    ]
+
+    if field in int_fields:
+        setattr(s, field, int(value))
+    else:
+        return JsonResponse({'error': 'Invalid field'}, status=400)
+
+    s.save()
+    return JsonResponse({'success': True, 'value': getattr(s, field)})
+
+
+@login_required
+@require_POST
+def settings_reset(request):
+    hub = _hub(request)
+    s = AppointmentsSettings.get_settings(hub)
+
+    s.default_duration = 60
+    s.min_booking_notice = 60
+    s.max_advance_booking = 90
+    s.allow_overlapping = False
+    s.send_reminders = True
+    s.reminder_hours_before = 24
+    s.allow_customer_cancellation = True
+    s.cancellation_notice_hours = 24
+    s.calendar_start_hour = 8
+    s.calendar_end_hour = 20
+    s.slot_interval = 15
+    s.save()
+
+    return JsonResponse({'success': True})

@@ -1,0 +1,202 @@
+{% load i18n djicons %}
+
+<div class="p-4">
+    <!-- Back Button -->
+    <button class="btn btn-ghost btn-sm mb-4"
+        hx-get="{% url 'appointments:recurring_list' %}"
+        hx-target="#main-content-area"
+        hx-push-url="true">
+        {% icon "arrow-back-outline" css_class="mr-1" %}
+        {% trans "Back to Recurring" %}
+    </button>
+
+    <!-- Header Card -->
+    <div class="card mb-4">
+        <div class="card-header">
+            <div class="flex justify-between items-center">
+                <div class="flex items-center gap-3">
+                    <div class="w-12 h-12 bg-primary/10 rounded-xl flex items-center justify-center">
+                        {% icon "repeat-outline" css_class="text-2xl text-primary" %}
+                    </div>
+                    <div>
+                        <h2 class="text-xl font-bold">{{ recurring.customer_name }}</h2>
+                        <span class="text-muted">{{ recurring.service_name }}</span>
+                    </div>
+                </div>
+                <div class="flex items-center gap-2">
+                    <span class="badge color-primary">{{ recurring.get_frequency_display }}</span>
+                    <button type="button" class="btn btn-sm btn-outline color-error" onclick="deleteRecurring()">
+                        {% icon "trash-outline" css_class="mr-1" %}
+                        {% trans "Deactivate" %}
+                    </button>
+                </div>
+            </div>
+        </div>
+        <div class="card-body">
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div class="p-3 rounded-lg" style="background: var(--color-base-200);">
+                    <div class="text-xs text-muted uppercase font-semibold mb-1">{% trans "Frequency" %}</div>
+                    <div class="text-sm font-semibold">{{ recurring.get_frequency_display }}</div>
+                </div>
+                <div class="p-3 rounded-lg" style="background: var(--color-base-200);">
+                    <div class="text-xs text-muted uppercase font-semibold mb-1">{% trans "Time" %}</div>
+                    <div class="text-sm font-semibold">{{ recurring.time|time:"H:i" }}</div>
+                </div>
+                <div class="p-3 rounded-lg" style="background: var(--color-base-200);">
+                    <div class="text-xs text-muted uppercase font-semibold mb-1">{% trans "Duration" %}</div>
+                    <div class="text-sm font-semibold">{{ recurring.duration_minutes }} {% trans "min" %}</div>
+                </div>
+                <div class="p-3 rounded-lg" style="background: var(--color-base-200);">
+                    <div class="text-xs text-muted uppercase font-semibold mb-1">{% trans "Start Date" %}</div>
+                    <div class="text-sm font-semibold">{{ recurring.start_date|date:"d M Y" }}</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Details -->
+    <div class="card mb-4">
+        <div class="card-header">
+            <h3 class="card-title">{% trans "Details" %}</h3>
+        </div>
+        <div class="card-body p-0">
+            <div class="list">
+                {% if recurring.staff_name %}
+                <div class="list-item">
+                    <div class="list-item-content">
+                        <div class="list-item-label">{% trans "Staff" %}</div>
+                    </div>
+                    <div class="list-item-end text-muted">{{ recurring.staff_name }}</div>
+                </div>
+                {% endif %}
+                {% if recurring.end_date %}
+                <div class="list-item">
+                    <div class="list-item-content">
+                        <div class="list-item-label">{% trans "End Date" %}</div>
+                    </div>
+                    <div class="list-item-end text-muted">{{ recurring.end_date|date:"d M Y" }}</div>
+                </div>
+                {% endif %}
+                {% if recurring.max_occurrences %}
+                <div class="list-item">
+                    <div class="list-item-content">
+                        <div class="list-item-label">{% trans "Max Occurrences" %}</div>
+                    </div>
+                    <div class="list-item-end text-muted">{{ recurring.max_occurrences }}</div>
+                </div>
+                {% endif %}
+                {% if recurring.day_of_week is not None %}
+                <div class="list-item">
+                    <div class="list-item-content">
+                        <div class="list-item-label">{% trans "Day of Week" %}</div>
+                    </div>
+                    <div class="list-item-end text-muted">{{ recurring.get_day_of_week_display }}</div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Generate Appointments -->
+    <div class="card mb-4">
+        <div class="card-header">
+            <h3 class="card-title">{% icon "add-circle-outline" css_class="text-success" %} {% trans "Generate Appointments" %}</h3>
+        </div>
+        <div class="card-body">
+            <p class="text-sm text-muted mb-3">{% trans "Generate appointments from this recurring template up to a specified date." %}</p>
+            <div class="flex items-end gap-3">
+                <div class="flex-1">
+                    <label class="block text-sm font-medium mb-1">{% trans "Generate until" %}</label>
+                    <input type="date" class="input w-full" id="generate-until">
+                </div>
+                <button type="button" class="btn color-primary" onclick="generateAppointments()">
+                    {% icon "add-circle-outline" css_class="mr-1" %}
+                    {% trans "Generate" %}
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Generated Appointments -->
+    {% if generated_appointments %}
+    <div class="card">
+        <div class="card-header">
+            <h3 class="card-title">{% icon "calendar-outline" css_class="text-primary" %} {% trans "Recent Generated Appointments" %}</h3>
+        </div>
+        <div class="card-body p-0">
+            <div class="list">
+                {% for apt in generated_appointments %}
+                <a hx-get="{% url 'appointments:detail' apt.id %}"
+                   hx-target="#main-content-area"
+                   hx-push-url="true"
+                   class="list-item list-item-clickable">
+                    <div class="list-item-start">
+                        <div class="flex flex-col items-center justify-center w-12 h-12 rounded-lg" style="background: var(--color-base-200);">
+                            <span class="text-xs text-muted">{{ apt.start_datetime|date:"D" }}</span>
+                            <span class="text-lg font-bold leading-tight">{{ apt.start_datetime|date:"d" }}</span>
+                        </div>
+                    </div>
+                    <div class="list-item-content">
+                        <div class="list-item-label">{{ apt.start_datetime|date:"l, d M Y" }} - {{ apt.start_datetime|time:"H:i" }}</div>
+                        <div class="list-item-note">{{ apt.appointment_number }}</div>
+                    </div>
+                    <div class="list-item-end">
+                        <span class="badge color-{% if apt.status == 'confirmed' %}primary{% elif apt.status == 'pending' %}warning{% elif apt.status == 'completed' %}success{% else %}medium{% endif %} badge-sm">
+                            {{ apt.get_status_display }}
+                        </span>
+                    </div>
+                </a>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+<script>
+async function generateAppointments() {
+    const untilDate = document.getElementById('generate-until').value;
+    if (!untilDate) {
+        Alpine.store('ui').error('{% trans "Please select a date" %}');
+        return;
+    }
+
+    try {
+        const response = await fetch('{% url "appointments:recurring_generate" recurring.id %}', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token }}' },
+            body: JSON.stringify({ until_date: untilDate })
+        });
+        const data = await response.json();
+        if (data.success) {
+            Alpine.store('ui').success(data.count + ' {% trans "appointments generated" %}');
+            htmx.ajax('GET', '{% url "appointments:recurring_detail" recurring.id %}', {target: '#main-content-area', swap: 'innerHTML'});
+        } else {
+            Alpine.store('ui').error(data.error || '{% trans "Error generating appointments" %}');
+        }
+    } catch (e) {
+        Alpine.store('ui').error('{% trans "Error generating appointments" %}');
+    }
+}
+
+async function deleteRecurring() {
+    if (!confirm('{% trans "Are you sure you want to deactivate this recurring appointment?" %}')) return;
+
+    try {
+        const response = await fetch('{% url "appointments:recurring_delete" recurring.id %}', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token }}' }
+        });
+        const data = await response.json();
+        if (data.success) {
+            Alpine.store('ui').success('{% trans "Recurring appointment deactivated" %}');
+            htmx.ajax('GET', '{% url "appointments:recurring_list" %}', {target: '#main-content-area', swap: 'innerHTML'});
+            history.pushState({}, '', '{% url "appointments:recurring_list" %}');
+        } else {
+            Alpine.store('ui').error(data.error || '{% trans "Error deactivating" %}');
+        }
+    } catch (e) {
+        Alpine.store('ui').error('{% trans "Error deactivating recurring appointment" %}');
+    }
+}
+</script>
