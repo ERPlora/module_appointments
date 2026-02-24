@@ -1,0 +1,756 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) YEAR THE PACKAGE'S COPYRIGHT HOLDER
+# This file is distributed under the same license as the PACKAGE package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: PACKAGE VERSION\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-02-24 23:58+0100\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"Language: \n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=3; plural=n == 1 ? 0 : n != 0 && n % 1000000 == 0 ? 1 : 2;\n"
+
+msgid "Appointments"
+msgstr "Citas"
+
+msgid "Search appointments..."
+msgstr "Buscar citas..."
+
+msgid "All statuses"
+msgstr "Todos los estados"
+
+msgid "Default duration in minutes"
+msgstr "Duración predeterminada en minutos"
+
+msgid "Minimum notice for booking (minutes)"
+msgstr "Aviso mínimo para reserva (minutos)"
+
+msgid "Maximum days in advance"
+msgstr "Máximo de días con antelación"
+
+msgid "Allow overlapping appointments for same staff"
+msgstr "Permitir citas superpuestas para el mismo personal"
+
+msgid "Time slot interval in minutes"
+msgstr "Intervalo de franja horaria en minutos"
+
+msgid "Appointments Settings"
+msgstr "Ajustes de citas"
+
+msgid "Monday"
+msgstr "Lunes"
+
+msgid "Tuesday"
+msgstr "Martes"
+
+msgid "Wednesday"
+msgstr "Miércoles"
+
+msgid "Thursday"
+msgstr "Jueves"
+
+msgid "Friday"
+msgstr "Viernes"
+
+msgid "Saturday"
+msgstr "Sábado"
+
+msgid "Sunday"
+msgstr "Domingo"
+
+msgid "End time must be after start time"
+msgstr "La hora de fin debe ser posterior a la hora de inicio"
+
+msgid "Holiday"
+msgstr "Festivo"
+
+msgid "Vacation"
+msgstr "Vacaciones"
+
+msgid "Break"
+msgstr "Descanso"
+
+msgid "Maintenance"
+msgstr "Mantenimiento"
+
+msgid "Other"
+msgstr "Otro"
+
+msgid "End datetime must be after start datetime"
+msgstr "La fecha/hora de fin debe ser posterior a la de inicio"
+
+msgid "Pending"
+msgstr "Pendiente"
+
+msgid "Confirmed"
+msgstr "Confirmado"
+
+msgid "In Progress"
+msgstr "En curso"
+
+msgid "Completed"
+msgstr "Completado"
+
+msgid "Cancelled"
+msgstr "Cancelado"
+
+msgid "No Show"
+msgstr "No presentado"
+
+msgid "Created"
+msgstr "Creado"
+
+msgid "Started"
+msgstr "Iniciado"
+
+msgid "Rescheduled"
+msgstr "Reprogramada"
+
+msgid "Marked No Show"
+msgstr "Marcado como no presentado"
+
+msgid "Note Added"
+msgstr "Nota añadida"
+
+msgid "Appointment histories"
+msgstr "Historial de citas"
+
+msgid "Daily"
+msgstr "Diario"
+
+msgid "Weekly"
+msgstr "Semanal"
+
+msgid "Every 2 Weeks"
+msgstr "Cada 2 semanas"
+
+msgid "Monthly"
+msgstr "Mensual"
+
+msgid "Overview"
+msgstr "Vista general"
+
+msgid "Calendar"
+msgstr "Calendario"
+
+msgid "List"
+msgstr "Lista"
+
+msgid "Schedules"
+msgstr "Horarios"
+
+msgid "Recurring"
+msgstr "Recurrente"
+
+msgid "Settings"
+msgstr "Ajustes"
+
+msgid "Back to Calendar"
+msgstr "Volver al calendario"
+
+msgid "Search Available Slots"
+msgstr "Buscar franjas disponibles"
+
+msgid "Date"
+msgstr "Fecha"
+
+msgid "Duration (minutes)"
+msgstr "Duración (minutos)"
+
+msgid "Check Availability"
+msgstr "Comprobar disponibilidad"
+
+msgid "Available Slots"
+msgstr "Franjas disponibles"
+
+msgid "Select a date and click Check Availability to see open slots"
+msgstr ""
+"Selecciona una fecha y haz clic en Comprobar disponibilidad para ver franjas"
+" abiertas"
+
+msgid "Please select a date"
+msgstr "Por favor, selecciona una fecha"
+
+msgid "Checking..."
+msgstr "Comprobando..."
+
+msgid "slots available"
+msgstr "franjas disponibles"
+
+msgid "No available slots for this date"
+msgstr "No hay franjas disponibles para esta fecha"
+
+msgid "Try a different date or shorter duration"
+msgstr "Prueba una fecha diferente o duración más corta"
+
+msgid "Error checking availability"
+msgstr "Error al comprobar disponibilidad"
+
+msgid "Block Time"
+msgstr "Bloquear tiempo"
+
+msgid "No blocked times"
+msgstr "No hay tiempos bloqueados"
+
+msgid "No time periods are currently blocked"
+msgstr "No hay períodos de tiempo bloqueados actualmente"
+
+msgid "Block title (e.g. Holiday, Vacation):"
+msgstr "Título del bloqueo (ej. Festivo, Vacaciones):"
+
+msgid "Start date and time (YYYY-MM-DD HH:MM):"
+msgstr "Fecha y hora de inicio (YYYY-MM-DD HH:MM):"
+
+msgid "End date and time (YYYY-MM-DD HH:MM):"
+msgstr "Fecha y hora de fin (YYYY-MM-DD HH:MM):"
+
+msgid "Time blocked successfully"
+msgstr "Tiempo bloqueado correctamente"
+
+msgid "Error blocking time"
+msgstr "Error al bloquear tiempo"
+
+msgid "Are you sure you want to remove this blocked time?"
+msgstr "¿Estás seguro de que quieres eliminar este bloqueo de tiempo?"
+
+msgid "Blocked time removed"
+msgstr "Bloqueo de tiempo eliminado"
+
+msgid "Error removing blocked time"
+msgstr "Error al eliminar bloqueo de tiempo"
+
+msgid "Blocked Times"
+msgstr "Tiempos bloqueados"
+
+msgid "New Appointment"
+msgstr "Nueva cita"
+
+msgid "Today"
+msgstr "Hoy"
+
+msgid "Day"
+msgstr "Día"
+
+msgid "Week"
+msgstr "Semana"
+
+msgid "This Week"
+msgstr "Esta semana"
+
+msgid "Today's Appointments"
+msgstr "Citas de hoy"
+
+msgid "New"
+msgstr "Nuevo"
+
+msgid "No appointments scheduled for today"
+msgstr "No hay citas programadas para hoy"
+
+msgid "Book an appointment"
+msgstr "Reservar una cita"
+
+msgid "Upcoming Appointments"
+msgstr "Próximas citas"
+
+msgid "View All"
+msgstr "Ver todo"
+
+msgid "No upcoming appointments"
+msgstr "Sin citas próximas"
+
+msgid "Today's Summary"
+msgstr "Resumen de hoy"
+
+msgid "Completed Today"
+msgstr "Completadas hoy"
+
+msgid "Back to Appointments"
+msgstr "Volver a citas"
+
+msgid "Edit"
+msgstr "Editar"
+
+msgid "Time"
+msgstr "Hora"
+
+msgid "Duration"
+msgstr "Duración"
+
+msgid "min"
+msgstr "min"
+
+msgid "Price"
+msgstr "Precio"
+
+msgid "Actions"
+msgstr "Acciones"
+
+msgid "Confirm"
+msgstr "Confirmar"
+
+msgid "Start"
+msgstr "Inicio"
+
+msgid "Complete"
+msgstr "Completar"
+
+msgid "Cancel"
+msgstr "Cancelar"
+
+msgid "Customer"
+msgstr "Cliente"
+
+msgid "Name"
+msgstr "Nombre"
+
+msgid "Phone"
+msgstr "Teléfono"
+
+msgid "Email"
+msgstr "Correo electrónico"
+
+msgid "Service"
+msgstr "Servicio"
+
+msgid "Staff"
+msgstr "Personal"
+
+msgid "Booked Online"
+msgstr "Reservado online"
+
+msgid "Yes"
+msgstr "Sí"
+
+msgid "No"
+msgstr "No"
+
+msgid "Notes"
+msgstr "Notas"
+
+msgid "Customer Notes"
+msgstr "Notas del cliente"
+
+msgid "Internal Notes"
+msgstr "Notas internas"
+
+msgid "Cancellation"
+msgstr "Cancelación"
+
+msgid "Reason"
+msgstr "Motivo"
+
+msgid "Cancelled at"
+msgstr "Cancelada el"
+
+msgid "History"
+msgstr "Historial"
+
+msgid "Danger Zone"
+msgstr "Zona peligrosa"
+
+msgid "Delete Appointment"
+msgstr "Eliminar cita"
+
+msgid "This action cannot be undone"
+msgstr "Esta acción no se puede deshacer"
+
+msgid "Delete"
+msgstr "Eliminar"
+
+msgid "Appointment confirmed"
+msgstr "Cita confirmada"
+
+msgid "Error confirming appointment"
+msgstr "Error al confirmar cita"
+
+msgid "Appointment started"
+msgstr "Cita iniciada"
+
+msgid "Error starting appointment"
+msgstr "Error al iniciar cita"
+
+msgid "Appointment completed"
+msgstr "Cita completada"
+
+msgid "Error completing appointment"
+msgstr "Error al completar cita"
+
+msgid "Are you sure you want to cancel this appointment?"
+msgstr "¿Estás seguro de que quieres cancelar esta cita?"
+
+msgid "Cancellation reason (optional):"
+msgstr "Motivo de cancelación (opcional):"
+
+msgid "Appointment cancelled"
+msgstr "Cita cancelada"
+
+msgid "Error cancelling appointment"
+msgstr "Error al cancelar cita"
+
+msgid "Mark this appointment as no-show?"
+msgstr "¿Marcar esta cita como no presentada?"
+
+msgid "Marked as no-show"
+msgstr "Marcado como no presentado"
+
+msgid "Error marking no-show"
+msgstr "Error al marcar como no presentado"
+
+msgid ""
+"Are you sure you want to delete this appointment? This action cannot be "
+"undone."
+msgstr ""
+"¿Estás seguro de que quieres eliminar esta cita? Esta acción no se puede "
+"deshacer."
+
+msgid "Appointment deleted"
+msgstr "Cita eliminada"
+
+msgid "Error deleting appointment"
+msgstr "Error al eliminar cita"
+
+msgid "Back to Appointment"
+msgstr "Volver a la cita"
+
+msgid "Back to List"
+msgstr "Volver a la lista"
+
+msgid "Customer Information"
+msgstr "Información del cliente"
+
+msgid "Customer Name"
+msgstr "Nombre del cliente"
+
+msgid "Enter customer name"
+msgstr "Introduce nombre del cliente"
+
+msgid "Phone number"
+msgstr "Número de teléfono"
+
+msgid "Email address"
+msgstr "Dirección de correo electrónico"
+
+msgid "Service Name"
+msgstr "Nombre del servicio"
+
+msgid "Enter service name"
+msgstr "Introduce nombre del servicio"
+
+msgid "Assigned staff member"
+msgstr "Miembro del personal asignado"
+
+msgid "Date & Time"
+msgstr "Fecha y hora"
+
+msgid "Notes visible to customer"
+msgstr "Notas visibles para el cliente"
+
+msgid "Internal notes (not visible to customer)"
+msgstr "Notas internas (no visibles para el cliente)"
+
+msgid "Create Appointment"
+msgstr "Crear cita"
+
+msgid "Save Changes"
+msgstr "Guardar cambios"
+
+msgid "Appointment saved successfully"
+msgstr "Cita guardada correctamente"
+
+msgid "Error saving appointment"
+msgstr "Error al guardar cita"
+
+msgid "Search by name, phone or number..."
+msgstr "Buscar por nombre, teléfono o número..."
+
+msgid "All Statuses"
+msgstr "Todos los estados"
+
+msgid "No appointments found"
+msgstr "No se encontraron citas"
+
+msgid "Create your first appointment or adjust your filters"
+msgstr "Crea tu primera cita o ajusta tus filtros"
+
+msgid "New Recurring"
+msgstr "Nueva recurrente"
+
+msgid "No recurring appointments"
+msgstr "Sin citas recurrentes"
+
+msgid "Set up recurring appointments for regular customers"
+msgstr "Configurar citas recurrentes para clientes habituales"
+
+msgid "Create Recurring"
+msgstr "Crear recurrente"
+
+msgid "Back to Recurring"
+msgstr "Volver a recurrentes"
+
+msgid "Deactivate"
+msgstr "Desactivar"
+
+msgid "Frequency"
+msgstr "Frecuencia"
+
+msgid "Start Date"
+msgstr "Fecha de inicio"
+
+msgid "Details"
+msgstr "Detalles"
+
+msgid "End Date"
+msgstr "Fecha de fin"
+
+msgid "Max Occurrences"
+msgstr "Máximo de ocurrencias"
+
+msgid "Day of Week"
+msgstr "Día de la semana"
+
+msgid "Generate Appointments"
+msgstr "Generar citas"
+
+msgid ""
+"Generate appointments from this recurring template up to a specified date."
+msgstr ""
+"Generar citas desde esta plantilla recurrente hasta una fecha especificada."
+
+msgid "Generate until"
+msgstr "Generar hasta"
+
+msgid "Generate"
+msgstr "Generar"
+
+msgid "Recent Generated Appointments"
+msgstr "Citas generadas recientemente"
+
+msgid "appointments generated"
+msgstr "citas generadas"
+
+msgid "Error generating appointments"
+msgstr "Error al generar citas"
+
+msgid "Are you sure you want to deactivate this recurring appointment?"
+msgstr "¿Estás seguro de que quieres desactivar esta cita recurrente?"
+
+msgid "Recurring appointment deactivated"
+msgstr "Cita recurrente desactivada"
+
+msgid "Error deactivating"
+msgstr "Error al desactivar"
+
+msgid "Error deactivating recurring appointment"
+msgstr "Error al desactivar cita recurrente"
+
+msgid "Time slot added"
+msgstr "Franja horaria añadida"
+
+msgid "Error adding time slot"
+msgstr "Error al añadir franja horaria"
+
+msgid "Schedule name:"
+msgstr "Nombre del horario:"
+
+msgid "Schedule updated"
+msgstr "Horario actualizado"
+
+msgid "Error updating schedule"
+msgstr "Error al actualizar horario"
+
+msgid "Are you sure you want to delete this schedule?"
+msgstr "¿Estás seguro de que quieres eliminar este horario?"
+
+msgid "Schedule deleted"
+msgstr "Horario eliminado"
+
+msgid "Error deleting schedule"
+msgstr "Error al eliminar horario"
+
+msgid "Delete this time slot?"
+msgstr "¿Eliminar esta franja horaria?"
+
+msgid "Time slot deleted"
+msgstr "Franja horaria eliminada"
+
+msgid "Error deleting time slot"
+msgstr "Error al eliminar franja horaria"
+
+msgid "Back to Schedules"
+msgstr "Volver a horarios"
+
+msgid "Default"
+msgstr "Por defecto"
+
+msgid "Inactive"
+msgstr "Inactivo"
+
+msgid "Add Slot"
+msgstr "Añadir franja"
+
+msgid "minutes"
+msgstr "minutos"
+
+msgid "No time slots defined for this day"
+msgstr "Sin franjas horarias definidas para este día"
+
+msgid "Add Time Slot"
+msgstr "Añadir franja horaria"
+
+msgid "Start Time"
+msgstr "Hora de inicio"
+
+msgid "End Time"
+msgstr "Hora de fin"
+
+msgid "Add"
+msgstr "Añadir"
+
+msgid "New Schedule"
+msgstr "Nuevo horario"
+
+msgid "time slots"
+msgstr "franjas horarias"
+
+msgid "No schedules created"
+msgstr "Sin horarios creados"
+
+msgid "Create your first schedule to define working hours"
+msgstr "Crea tu primer horario para definir las horas de trabajo"
+
+msgid "Create Schedule"
+msgstr "Crear horario"
+
+msgid "Schedule created"
+msgstr "Horario creado"
+
+msgid "Error creating schedule"
+msgstr "Error al crear horario"
+
+msgid "Booking Settings"
+msgstr "Ajustes de reserva"
+
+msgid "Default Duration"
+msgstr "Duración predeterminada"
+
+msgid "Default appointment duration in minutes"
+msgstr "Duración predeterminada de citas en minutos"
+
+msgid "Minimum Booking Notice"
+msgstr "Aviso mínimo de reserva"
+
+msgid "Minutes in advance required for booking"
+msgstr "Minutos de antelación requeridos para reserva"
+
+msgid "Maximum Advance Booking"
+msgstr "Reserva máxima con antelación"
+
+msgid "Days in advance appointments can be booked"
+msgstr "Días de antelación para reservar citas"
+
+msgid "Allow Overlapping"
+msgstr "Permitir superposición"
+
+msgid "Allow overlapping appointments for the same staff"
+msgstr "Permitir citas superpuestas para el mismo personal"
+
+msgid "Reminder Settings"
+msgstr "Ajustes de recordatorios"
+
+msgid "Send Reminders"
+msgstr "Enviar recordatorios"
+
+msgid "Send reminder notifications to customers"
+msgstr "Enviar notificaciones de recordatorio a los clientes"
+
+msgid "Reminder Hours Before"
+msgstr "Horas antes del recordatorio"
+
+msgid "Hours before appointment to send reminder"
+msgstr "Horas antes de la cita para enviar recordatorio"
+
+msgid "Cancellation Settings"
+msgstr "Ajustes de cancelación"
+
+msgid "Allow Customer Cancellation"
+msgstr "Permitir cancelación del cliente"
+
+msgid "Allow customers to cancel their appointments"
+msgstr "Permitir a los clientes cancelar sus citas"
+
+msgid "Cancellation Notice Hours"
+msgstr "Horas de aviso de cancelación"
+
+msgid "Minimum hours notice for cancellation"
+msgstr "Horas mínimas de aviso para cancelación"
+
+msgid "Calendar Display"
+msgstr "Vista del calendario"
+
+msgid "Calendar Start Hour"
+msgstr "Hora inicial del calendario"
+
+msgid "First hour shown in calendar"
+msgstr "Primera hora mostrada en el calendario"
+
+msgid "Calendar End Hour"
+msgstr "Hora final del calendario"
+
+msgid "Last hour shown in calendar"
+msgstr "Última hora mostrada en el calendario"
+
+msgid "Time Slot Interval"
+msgstr "Intervalo de franja horaria"
+
+msgid "Minutes between available slots"
+msgstr "Minutos entre franjas disponibles"
+
+msgid "Quick Actions"
+msgstr "Acciones rápidas"
+
+msgid "Manage Schedules"
+msgstr "Gestionar horarios"
+
+msgid "Define working hours and availability"
+msgstr "Definir horario laboral y disponibilidad"
+
+msgid "Manage holidays and blocked periods"
+msgstr "Gestionar festivos y períodos bloqueados"
+
+msgid "Recurring Appointments"
+msgstr "Citas recurrentes"
+
+msgid "Manage recurring appointment templates"
+msgstr "Gestionar plantillas de citas recurrentes"
+
+msgid "Reset Settings"
+msgstr "Restablecer ajustes"
+
+msgid "Restore all appointment settings to their default values."
+msgstr "Restaurar todos los ajustes de citas a sus valores predeterminados."
+
+msgid "Reset to Defaults"
+msgstr "Restablecer valores predeterminados"
+
+msgid "Reset all settings to defaults?"
+msgstr "¿Restablecer todos los ajustes a los valores predeterminados?"
+
+msgid "Settings reset to defaults"
+msgstr "Ajustes restablecidos a valores predeterminados"
+
+msgid "Error resetting settings"
+msgstr "Error al restablecer ajustes"
+
+msgid "Not found"
+msgstr "No encontrado"
+
+msgid "Invalid field"
+msgstr "Campo inválido"

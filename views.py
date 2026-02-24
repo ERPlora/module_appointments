@@ -7,6 +7,7 @@ from django.db.models import Q, Count
 from django.http import JsonResponse
 from django.utils import timezone
 from django.views.decorators.http import require_POST, require_GET
+from django.utils.translation import gettext as _
 
 from apps.accounts.decorators import login_required
 from apps.core.htmx import htmx_view
@@ -210,7 +211,7 @@ def appointment_detail(request, pk):
     hub = _hub(request)
     apt = Appointment.objects.filter(hub_id=hub, is_deleted=False, pk=pk).first()
     if not apt:
-        return JsonResponse({'error': 'Not found'}, status=404)
+        return JsonResponse({'error': _('Not found')}, status=404)
 
     history = apt.history.all()[:20]
     return {'appointment': apt, 'history': history}
@@ -251,7 +252,7 @@ def appointment_edit(request, pk):
     hub = _hub(request)
     apt = Appointment.objects.filter(hub_id=hub, is_deleted=False, pk=pk).first()
     if not apt:
-        return JsonResponse({'error': 'Not found'}, status=404)
+        return JsonResponse({'error': _('Not found')}, status=404)
 
     if request.method == 'POST':
         form = AppointmentForm(request.POST, instance=apt)
@@ -272,7 +273,7 @@ def appointment_delete(request, pk):
     hub = _hub(request)
     apt = Appointment.objects.filter(hub_id=hub, is_deleted=False, pk=pk).first()
     if not apt:
-        return JsonResponse({'error': 'Not found'}, status=404)
+        return JsonResponse({'error': _('Not found')}, status=404)
 
     _log(apt, 'cancelled', 'Appointment deleted', performed_by=_employee(request))
     apt.is_deleted = True
@@ -291,7 +292,7 @@ def appointment_confirm(request, pk):
     hub = _hub(request)
     apt = Appointment.objects.filter(hub_id=hub, is_deleted=False, pk=pk).first()
     if not apt:
-        return JsonResponse({'error': 'Not found'}, status=404)
+        return JsonResponse({'error': _('Not found')}, status=404)
 
     if apt.confirm():
         _log(apt, 'confirmed', performed_by=_employee(request))
@@ -305,7 +306,7 @@ def appointment_start(request, pk):
     hub = _hub(request)
     apt = Appointment.objects.filter(hub_id=hub, is_deleted=False, pk=pk).first()
     if not apt:
-        return JsonResponse({'error': 'Not found'}, status=404)
+        return JsonResponse({'error': _('Not found')}, status=404)
 
     if apt.start():
         _log(apt, 'started', performed_by=_employee(request))
@@ -319,7 +320,7 @@ def appointment_cancel(request, pk):
     hub = _hub(request)
     apt = Appointment.objects.filter(hub_id=hub, is_deleted=False, pk=pk).first()
     if not apt:
-        return JsonResponse({'error': 'Not found'}, status=404)
+        return JsonResponse({'error': _('Not found')}, status=404)
 
     try:
         data = json.loads(request.body) if request.body else {}
@@ -339,7 +340,7 @@ def appointment_complete(request, pk):
     hub = _hub(request)
     apt = Appointment.objects.filter(hub_id=hub, is_deleted=False, pk=pk).first()
     if not apt:
-        return JsonResponse({'error': 'Not found'}, status=404)
+        return JsonResponse({'error': _('Not found')}, status=404)
 
     if apt.complete():
         _log(apt, 'completed', performed_by=_employee(request))
@@ -353,7 +354,7 @@ def appointment_no_show(request, pk):
     hub = _hub(request)
     apt = Appointment.objects.filter(hub_id=hub, is_deleted=False, pk=pk).first()
     if not apt:
-        return JsonResponse({'error': 'Not found'}, status=404)
+        return JsonResponse({'error': _('Not found')}, status=404)
 
     if apt.mark_no_show():
         _log(apt, 'no_show', performed_by=_employee(request))
@@ -367,7 +368,7 @@ def appointment_reschedule(request, pk):
     hub = _hub(request)
     apt = Appointment.objects.filter(hub_id=hub, is_deleted=False, pk=pk).first()
     if not apt:
-        return JsonResponse({'error': 'Not found'}, status=404)
+        return JsonResponse({'error': _('Not found')}, status=404)
 
     try:
         data = json.loads(request.body) if request.body else {}
@@ -502,7 +503,7 @@ def schedule_detail(request, pk):
     hub = _hub(request)
     schedule = Schedule.objects.filter(hub_id=hub, is_deleted=False, pk=pk).first()
     if not schedule:
-        return JsonResponse({'error': 'Not found'}, status=404)
+        return JsonResponse({'error': _('Not found')}, status=404)
 
     time_slots = schedule.time_slots.filter(is_deleted=False).order_by('day_of_week', 'start_time')
     slots_by_day = {}
@@ -536,7 +537,7 @@ def schedule_edit(request, pk):
     hub = _hub(request)
     schedule = Schedule.objects.filter(hub_id=hub, is_deleted=False, pk=pk).first()
     if not schedule:
-        return JsonResponse({'error': 'Not found'}, status=404)
+        return JsonResponse({'error': _('Not found')}, status=404)
 
     if request.method == 'POST':
         form = ScheduleForm(request.POST, instance=schedule)
@@ -555,7 +556,7 @@ def schedule_delete(request, pk):
     hub = _hub(request)
     schedule = Schedule.objects.filter(hub_id=hub, is_deleted=False, pk=pk).first()
     if not schedule:
-        return JsonResponse({'error': 'Not found'}, status=404)
+        return JsonResponse({'error': _('Not found')}, status=404)
 
     schedule.is_deleted = True
     schedule.deleted_at = timezone.now()
@@ -569,7 +570,7 @@ def add_time_slot(request, pk):
     hub = _hub(request)
     schedule = Schedule.objects.filter(hub_id=hub, is_deleted=False, pk=pk).first()
     if not schedule:
-        return JsonResponse({'error': 'Not found'}, status=404)
+        return JsonResponse({'error': _('Not found')}, status=404)
 
     form = ScheduleTimeSlotForm(request.POST)
     if form.is_valid():
@@ -587,7 +588,7 @@ def delete_time_slot(request, pk):
     hub = _hub(request)
     slot = ScheduleTimeSlot.objects.filter(hub_id=hub, is_deleted=False, pk=pk).first()
     if not slot:
-        return JsonResponse({'error': 'Not found'}, status=404)
+        return JsonResponse({'error': _('Not found')}, status=404)
 
     slot.is_deleted = True
     slot.deleted_at = timezone.now()
@@ -634,7 +635,7 @@ def blocked_time_delete(request, pk):
     hub = _hub(request)
     bt = BlockedTime.objects.filter(hub_id=hub, is_deleted=False, pk=pk).first()
     if not bt:
-        return JsonResponse({'error': 'Not found'}, status=404)
+        return JsonResponse({'error': _('Not found')}, status=404)
 
     bt.is_deleted = True
     bt.deleted_at = timezone.now()
@@ -678,7 +679,7 @@ def recurring_detail(request, pk):
     hub = _hub(request)
     recurring = RecurringAppointment.objects.filter(hub_id=hub, is_deleted=False, pk=pk).first()
     if not recurring:
-        return JsonResponse({'error': 'Not found'}, status=404)
+        return JsonResponse({'error': _('Not found')}, status=404)
 
     generated = Appointment.objects.filter(
         hub_id=hub, is_deleted=False,
@@ -695,7 +696,7 @@ def recurring_delete(request, pk):
     hub = _hub(request)
     recurring = RecurringAppointment.objects.filter(hub_id=hub, is_deleted=False, pk=pk).first()
     if not recurring:
-        return JsonResponse({'error': 'Not found'}, status=404)
+        return JsonResponse({'error': _('Not found')}, status=404)
 
     recurring.is_active = False
     recurring.save(update_fields=['is_active', 'updated_at'])
@@ -709,7 +710,7 @@ def recurring_generate(request, pk):
     hub = _hub(request)
     recurring = RecurringAppointment.objects.filter(hub_id=hub, is_deleted=False, pk=pk).first()
     if not recurring:
-        return JsonResponse({'error': 'Not found'}, status=404)
+        return JsonResponse({'error': _('Not found')}, status=404)
 
     try:
         data = json.loads(request.body) if request.body else {}
@@ -830,7 +831,7 @@ def settings_toggle(request):
     toggleable = ['allow_overlapping', 'send_reminders', 'allow_customer_cancellation']
 
     if field not in toggleable:
-        return JsonResponse({'error': 'Invalid field'}, status=400)
+        return JsonResponse({'error': _('Invalid field')}, status=400)
 
     setattr(s, field, not getattr(s, field))
     s.save()
@@ -860,7 +861,7 @@ def settings_input(request):
     if field in int_fields:
         setattr(s, field, int(value))
     else:
-        return JsonResponse({'error': 'Invalid field'}, status=400)
+        return JsonResponse({'error': _('Invalid field')}, status=400)
 
     s.save()
     return JsonResponse({'success': True, 'value': getattr(s, field)})
