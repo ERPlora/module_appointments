@@ -8,6 +8,10 @@ app_name = 'appointments'
 urlpatterns = [
     # Dashboard
     path('', views.index, name='index'),
+
+    # Navigation tab aliases
+    path('appointments/', views.appointments_list, name='appointments'),
+
     path('dashboard/', views.dashboard, name='dashboard'),
 
     # Calendar
