@@ -1,15 +1,7 @@
 {% load djicons i18n djicons djicons %}
+<div data-back-url="{% if mode == 'edit' %}{% url 'appointments:detail' appointment.id %}{% else %}{% url 'appointments:list' %}{% endif %}" hidden></div>
 
 <div class="p-4">
-    <!-- Back Button -->
-    <button class="btn btn-ghost btn-sm mb-4"
-        hx-get="{% if mode == 'edit' %}{% url 'appointments:detail' appointment.id %}{% else %}{% url 'appointments:list' %}{% endif %}"
-        hx-target="#main-content-area"
-        hx-push-url="true">
-        {% icon "arrow-back-outline" css_class="mr-1" %}
-        {% if mode == 'edit' %}{% trans "Back to Appointment" %}{% else %}{% trans "Back to List" %}{% endif %}
-    </button>
-
     <form id="appointmentForm" method="post" class="space-y-4">
         {% csrf_token %}
 

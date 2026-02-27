@@ -1,14 +1,7 @@
 {% load djicons i18n djicons djicons %}
+<div data-back-url="{% url 'appointments:calendar' %}" hidden></div>
 
 <div class="p-4">
-    <button class="btn btn-ghost btn-sm mb-4"
-        hx-get="{% url 'appointments:calendar' %}"
-        hx-target="#main-content-area"
-        hx-push-url="true">
-        {% icon "arrow-back-outline" css_class="mr-1" %}
-        {% trans "Back to Calendar" %}
-    </button>
-
     <div class="card mb-4">
         <div class="card-header">
             <h3 class="card-title">{% icon "search-outline" css_class="text-primary" %} {% trans "Search Available Slots" %}</h3>
