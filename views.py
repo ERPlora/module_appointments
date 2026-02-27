@@ -9,7 +9,7 @@ from django.utils import timezone
 from django.views.decorators.http import require_POST, require_GET
 from django.utils.translation import gettext as _
 
-from apps.accounts.decorators import login_required
+from apps.accounts.decorators import login_required, permission_required
 from apps.core.htmx import htmx_view
 from apps.modules_runtime.navigation import with_module_nav
 
@@ -783,6 +783,7 @@ def recurring_generate(request, pk):
 # =============================================================================
 
 @login_required
+@permission_required('appointments.manage_settings')
 @with_module_nav('appointments', 'settings')
 @htmx_view('appointments/pages/settings.html', 'appointments/partials/settings.html')
 def settings(request):
@@ -793,6 +794,7 @@ def settings(request):
 
 
 @login_required
+@permission_required('appointments.manage_settings')
 @require_POST
 def settings_save(request):
     hub = _hub(request)
@@ -817,6 +819,7 @@ def settings_save(request):
 
 
 @login_required
+@permission_required('appointments.manage_settings')
 @require_POST
 def settings_toggle(request):
     hub = _hub(request)

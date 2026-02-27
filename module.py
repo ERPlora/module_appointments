@@ -21,3 +21,7 @@ NAVIGATION = [
 
 # Module Dependencies
 DEPENDENCIES = ['customers', 'services']
+
+PERMISSIONS = [
+    'appointments.manage_settings',
+]
