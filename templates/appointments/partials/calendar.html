@@ -1,101 +1,5 @@
 {% load djicons i18n djicons djicons %}
 
-<script>
-function calendarApp() {
-    return {
-        viewMode: 'day',
-        currentDate: new Date(),
-        events: [],
-        hours: Array.from({length: {{ calendar_end_hour }} - {{ calendar_start_hour }}}, (_, i) => i + {{ calendar_start_hour }}),
-
-        get currentTitle() {
-            const options = this.viewMode === 'day'
-                ? { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }
-                : { year: 'numeric', month: 'long' };
-            return this.currentDate.toLocaleDateString('{{ request.LANGUAGE_CODE }}', options);
-        },
-
-        get weekDays() {
-            const days = [];
-            const start = new Date(this.currentDate);
-            start.setDate(start.getDate() - start.getDay() + 1);
-            for (let i = 0; i < 7; i++) {
-                const d = new Date(start);
-                d.setDate(start.getDate() + i);
-                days.push({
-                    date: d.toISOString().split('T')[0],
-                    name: d.toLocaleDateString('{{ request.LANGUAGE_CODE }}', { weekday: 'short' }),
-                    number: d.getDate()
-                });
-            }
-            return days;
-        },
-
-        init() { this.fetchEvents(); },
-
-        async fetchEvents() {
-            const start = this.getStartDate();
-            const end = this.getEndDate();
-            const response = await fetch(`{% url 'appointments:calendar_data' %}?start=${start}&end=${end}`);
-            const data = await response.json();
-            this.events = data.events;
-        },
-
-        getStartDate() {
-            if (this.viewMode === 'day') return this.currentDate.toISOString().split('T')[0];
-            const start = new Date(this.currentDate);
-            start.setDate(start.getDate() - start.getDay() + 1);
-            return start.toISOString().split('T')[0];
-        },
-
-        getEndDate() {
-            if (this.viewMode === 'day') return this.currentDate.toISOString().split('T')[0];
-            const end = new Date(this.currentDate);
-            end.setDate(end.getDate() - end.getDay() + 7);
-            return end.toISOString().split('T')[0];
-        },
-
-        formatHour(hour) { return `${hour.toString().padStart(2, '0')}:00`; },
-
-        getEventsForHour(hour) {
-            const dateStr = this.currentDate.toISOString().split('T')[0];
-            return this.events.filter(e => {
-                const eventDate = e.start.split('T')[0];
-                const eventHour = parseInt(e.start.split('T')[1].split(':')[0]);
-                return eventDate === dateStr && eventHour === hour;
-            });
-        },
-
-        getEventsForDayHour(dateStr, hour) {
-            return this.events.filter(e => {
-                const eventDate = e.start.split('T')[0];
-                const eventHour = parseInt(e.start.split('T')[1].split(':')[0]);
-                return eventDate === dateStr && eventHour === hour;
-            });
-        },
-
-        prevPeriod() {
-            this.currentDate.setDate(this.currentDate.getDate() - (this.viewMode === 'day' ? 1 : 7));
-            this.currentDate = new Date(this.currentDate);
-            this.fetchEvents();
-        },
-
-        nextPeriod() {
-            this.currentDate.setDate(this.currentDate.getDate() + (this.viewMode === 'day' ? 1 : 7));
-            this.currentDate = new Date(this.currentDate);
-            this.fetchEvents();
-        },
-
-        goToToday() { this.currentDate = new Date(); this.fetchEvents(); },
-
-        openAppointment(id) {
-            htmx.ajax('GET', `/m/appointments/${id}/`, {target: '#main-content-area', swap: 'innerHTML'});
-            history.pushState({}, '', `/m/appointments/${id}/`);
-        }
-    };
-}
-</script>
-
 <style>
 .calendar-container {
     background: var(--card-bg, var(--color-base-200));
@@ -149,7 +53,97 @@ function calendarApp() {
         </button>
     </div>
 
-    <div class="calendar-container" x-data="calendarApp()">
+    <div class="calendar-container" x-data="{
+            viewMode: 'day',
+            currentDate: new Date(),
+            events: [],
+            hours: Array.from({length: {{ calendar_end_hour }} - {{ calendar_start_hour }}}, (_, i) => i + {{ calendar_start_hour }}),
+
+            get currentTitle() {
+                const options = this.viewMode === 'day'
+                    ? { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }
+                    : { year: 'numeric', month: 'long' };
+                return this.currentDate.toLocaleDateString('{{ request.LANGUAGE_CODE }}', options);
+            },
+
+            get weekDays() {
+                const days = [];
+                const start = new Date(this.currentDate);
+                start.setDate(start.getDate() - start.getDay() + 1);
+                for (let i = 0; i < 7; i++) {
+                    const d = new Date(start);
+                    d.setDate(start.getDate() + i);
+                    days.push({
+                        date: d.toISOString().split('T')[0],
+                        name: d.toLocaleDateString('{{ request.LANGUAGE_CODE }}', { weekday: 'short' }),
+                        number: d.getDate()
+                    });
+                }
+                return days;
+            },
+
+            init() { this.fetchEvents(); },
+
+            async fetchEvents() {
+                const start = this.getStartDate();
+                const end = this.getEndDate();
+                const response = await fetch('{% url 'appointments:calendar_data' %}?start=' + start + '&amp;end=' + end);
+                const data = await response.json();
+                this.events = data.events;
+            },
+
+            getStartDate() {
+                if (this.viewMode === 'day') return this.currentDate.toISOString().split('T')[0];
+                const start = new Date(this.currentDate);
+                start.setDate(start.getDate() - start.getDay() + 1);
+                return start.toISOString().split('T')[0];
+            },
+
+            getEndDate() {
+                if (this.viewMode === 'day') return this.currentDate.toISOString().split('T')[0];
+                const end = new Date(this.currentDate);
+                end.setDate(end.getDate() - end.getDay() + 7);
+                return end.toISOString().split('T')[0];
+            },
+
+            formatHour(hour) { return hour.toString().padStart(2, '0') + ':00'; },
+
+            getEventsForHour(hour) {
+                const dateStr = this.currentDate.toISOString().split('T')[0];
+                return this.events.filter(e => {
+                    const eventDate = e.start.split('T')[0];
+                    const eventHour = parseInt(e.start.split('T')[1].split(':')[0]);
+                    return eventDate === dateStr && eventHour === hour;
+                });
+            },
+
+            getEventsForDayHour(dateStr, hour) {
+                return this.events.filter(e => {
+                    const eventDate = e.start.split('T')[0];
+                    const eventHour = parseInt(e.start.split('T')[1].split(':')[0]);
+                    return eventDate === dateStr && eventHour === hour;
+                });
+            },
+
+            prevPeriod() {
+                this.currentDate.setDate(this.currentDate.getDate() - (this.viewMode === 'day' ? 1 : 7));
+                this.currentDate = new Date(this.currentDate);
+                this.fetchEvents();
+            },
+
+            nextPeriod() {
+                this.currentDate.setDate(this.currentDate.getDate() + (this.viewMode === 'day' ? 1 : 7));
+                this.currentDate = new Date(this.currentDate);
+                this.fetchEvents();
+            },
+
+            goToToday() { this.currentDate = new Date(); this.fetchEvents(); },
+
+            openAppointment(id) {
+                htmx.ajax('GET', '/m/appointments/' + id + '/', {target: '#main-content-area', swap: 'innerHTML'});
+                history.pushState({}, '', '/m/appointments/' + id + '/');
+            }
+        }">
         <div class="calendar-header">
             <div class="calendar-nav">
                 <button type="button" class="btn btn-ghost btn-sm" @click="prevPeriod">

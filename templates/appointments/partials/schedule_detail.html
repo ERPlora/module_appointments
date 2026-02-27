@@ -4,36 +4,6 @@
 <script>
 window.addSlotModalState = Alpine.reactive({ open: false, dayOfWeek: null, dayName: '' });
 
-function addSlotModal() {
-    return {
-        get open() { return window.addSlotModalState.open; },
-        set open(val) { window.addSlotModalState.open = val; },
-        get dayOfWeek() { return window.addSlotModalState.dayOfWeek; },
-        get dayName() { return window.addSlotModalState.dayName; },
-        startTime: '09:00',
-        endTime: '17:00',
-        async submit() {
-            try {
-                const response = await fetch('{% url "appointments:add_time_slot" schedule.id %}', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token }}' },
-                    body: JSON.stringify({ day_of_week: this.dayOfWeek, start_time: this.startTime, end_time: this.endTime })
-                });
-                const result = await response.json();
-                if (result.success) {
-                    Alpine.store('ui').success('{% trans "Time slot added" %}');
-                    htmx.ajax('GET', '{% url "appointments:schedule_detail" schedule.id %}', {target: '#main-content-area', swap: 'innerHTML'});
-                } else {
-                    Alpine.store('ui').error(result.error || '{% trans "Error adding time slot" %}');
-                }
-            } catch (e) {
-                Alpine.store('ui').error('{% trans "Error adding time slot" %}');
-            }
-            this.open = false;
-        }
-    };
-}
-
 function editSchedule() {
     const name = prompt('{% trans "Schedule name:" %}', '{{ schedule.name|escapejs }}');
     if (!name) return;
@@ -183,7 +153,33 @@ async function deleteTimeSlot(slotId) {
 </div>
 
 <!-- Add Time Slot Modal -->
-<div class="modal-backdrop" x-data="addSlotModal()" :data-state="open ? 'open' : 'closed'" @keydown.escape.window="open = false">
+<div class="modal-backdrop" x-data="{
+        get open() { return window.addSlotModalState.open; },
+        set open(val) { window.addSlotModalState.open = val; },
+        get dayOfWeek() { return window.addSlotModalState.dayOfWeek; },
+        get dayName() { return window.addSlotModalState.dayName; },
+        startTime: '09:00',
+        endTime: '17:00',
+        async submit() {
+            try {
+                const response = await fetch('{% url 'appointments:add_time_slot' schedule.id %}', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token }}' },
+                    body: JSON.stringify({ day_of_week: this.dayOfWeek, start_time: this.startTime, end_time: this.endTime })
+                });
+                const result = await response.json();
+                if (result.success) {
+                    Alpine.store('ui').success('{% trans 'Time slot added' %}');
+                    htmx.ajax('GET', '{% url 'appointments:schedule_detail' schedule.id %}', {target: '#main-content-area', swap: 'innerHTML'});
+                } else {
+                    Alpine.store('ui').error(result.error || '{% trans 'Error adding time slot' %}');
+                }
+            } catch (e) {
+                Alpine.store('ui').error('{% trans 'Error adding time slot' %}');
+            }
+            this.open = false;
+        }
+    }" :data-state="open ? 'open' : 'closed'" @keydown.escape.window="open = false">
     <div class="modal modal-sm">
         <div class="modal-header">
             <h3 class="modal-title">{% trans "Add Time Slot" %} - <span x-text="dayName"></span></h3>
