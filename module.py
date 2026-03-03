@@ -25,3 +25,9 @@ DEPENDENCIES = ['customers', 'services']
 PERMISSIONS = [
     'appointments.manage_settings',
 ]
+
+ROLE_PERMISSIONS = {
+    "admin": ["*"],
+    "manager": [],
+    "employee": [],
+}
