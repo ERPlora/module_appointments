@@ -123,22 +123,22 @@ document.getElementById('appointmentForm').addEventListener('submit', async func
     const data = Object.fromEntries(formData.entries());
 
     try {
-        const url = {% if mode == 'edit' %}'{% url "appointments:edit" appointment.id %}'{% else %}'{% url "appointments:create" %}'{% endif %};
+        const url = {% if mode == 'edit' %}'{% url "appointments:edit" appointment.id %}'{% else %}'{% url "appointments:create" %}'{% endif %},
         const response = await fetch(url, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token }}' },
             body: JSON.stringify(data)
-        });
+        },
 
         const result = await response.json();
 
         if (result.success) {
             Alpine.store('ui').success('{% trans "Appointment saved successfully" %}');
             {% if mode == 'edit' %}
-            htmx.ajax('GET', '{% url "appointments:detail" appointment.id %}', {target: '#main-content-area', swap: 'innerHTML'});
+            htmx.ajax('GET', '{% url "appointments:detail" appointment.id %}', {target: '#main-content-area', swap: 'innerHTML'},
             history.pushState({}, '', '{% url "appointments:detail" appointment.id %}');
             {% else %}
-            htmx.ajax('GET', '/m/appointments/' + result.id + '/', {target: '#main-content-area', swap: 'innerHTML'});
+            htmx.ajax('GET', '/m/appointments/' + result.id + '/', {target: '#main-content-area', swap: 'innerHTML'},
             history.pushState({}, '', '/m/appointments/' + result.id + '/');
             {% endif %}
         } else {
@@ -158,5 +158,5 @@ document.getElementById('appointmentForm').addEventListener('submit', async func
         Alpine.store('ui').error('{% trans "Error saving appointment" %}');
         submitBtn.disabled = false;
     }
-});
+},
 </script>

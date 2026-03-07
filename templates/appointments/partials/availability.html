@@ -60,7 +60,7 @@ async function checkSlots() {
             let html = '<div class="flex flex-wrap gap-2">';
             data.slots.forEach(slot => {
                 html += `<button type="button" class="btn btn-sm btn-outline" style="min-width: 110px;">${slot.start} - ${slot.end}</button>`;
-            });
+            },
             html += '</div>';
             html += `<p class="text-sm text-muted mt-3">${data.slots.length} {% trans "slots available" %}</p>`;
             resultsDiv.innerHTML = html;

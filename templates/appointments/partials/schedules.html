@@ -70,7 +70,7 @@ function addSchedule() {
     .then(data => {
         if (data.success) {
             Alpine.store('ui').success('{% trans "Schedule created" %}');
-            htmx.ajax('GET', '{% url "appointments:schedules" %}', {target: '#main-content-area', swap: 'innerHTML'});
+            htmx.ajax('GET', '{% url "appointments:schedules" %}', {target: '#main-content-area', swap: 'innerHTML'},
         } else {
             Alpine.store('ui').error(data.error || '{% trans "Error creating schedule" %}');
         }

@@ -62,7 +62,7 @@
             get currentTitle() {
                 const options = this.viewMode === 'day'
                     ? { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }
-                    : { year: 'numeric', month: 'long' };
+                    : { year: 'numeric', month: 'long' },
                 return this.currentDate.toLocaleDateString('{{ request.LANGUAGE_CODE }}', options);
             },
 
@@ -77,7 +77,7 @@
                         date: d.toISOString().split('T')[0],
                         name: d.toLocaleDateString('{{ request.LANGUAGE_CODE }}', { weekday: 'short' }),
                         number: d.getDate()
-                    });
+                    },
                 }
                 return days;
             },
@@ -114,16 +114,14 @@
                     const eventDate = e.start.split('T')[0];
                     const eventHour = parseInt(e.start.split('T')[1].split(':')[0]);
                     return eventDate === dateStr && eventHour === hour;
-                });
-            },
+                },
 
             getEventsForDayHour(dateStr, hour) {
                 return this.events.filter(e => {
                     const eventDate = e.start.split('T')[0];
                     const eventHour = parseInt(e.start.split('T')[1].split(':')[0]);
                     return eventDate === dateStr && eventHour === hour;
-                });
-            },
+                },
 
             prevPeriod() {
                 this.currentDate.setDate(this.currentDate.getDate() - (this.viewMode === 'day' ? 1 : 7));
@@ -140,7 +138,7 @@
             goToToday() { this.currentDate = new Date(); this.fetchEvents(); },
 
             openAppointment(id) {
-                htmx.ajax('GET', '/m/appointments/' + id + '/', {target: '#main-content-area', swap: 'innerHTML'});
+                htmx.ajax('GET', '/m/appointments/' + id + '/', {target: '#main-content-area', swap: 'innerHTML'},
                 history.pushState({}, '', '/m/appointments/' + id + '/');
             }
         }">

@@ -271,7 +271,7 @@ function resetSettings() {
     .then(data => {
         if (data.success) {
             Alpine.store('ui').success('{% trans "Settings reset to defaults" %}');
-            htmx.ajax('GET', '{% url "appointments:settings" %}', {target: '#main-content-area', swap: 'innerHTML'});
+            htmx.ajax('GET', '{% url "appointments:settings" %}', {target: '#main-content-area', swap: 'innerHTML'},
         } else {
             Alpine.store('ui').error(data.error || '{% trans "Error resetting settings" %}');
         }

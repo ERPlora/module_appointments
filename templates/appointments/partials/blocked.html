@@ -78,7 +78,7 @@ function addBlockedTime() {
     .then(data => {
         if (data.success) {
             Alpine.store('ui').success('{% trans "Time blocked successfully" %}');
-            htmx.ajax('GET', '{% url "appointments:blocked_list" %}', {target: '#main-content-area', swap: 'innerHTML'});
+            htmx.ajax('GET', '{% url "appointments:blocked_list" %}', {target: '#main-content-area', swap: 'innerHTML'},
         } else {
             Alpine.store('ui').error(data.error || '{% trans "Error blocking time" %}');
         }
@@ -93,11 +93,11 @@ async function deleteBlocked(id) {
         const response = await fetch(`/m/appointments/blocked/${id}/delete/`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token }}' }
-        });
+        },
         const result = await response.json();
         if (result.success) {
             Alpine.store('ui').success('{% trans "Blocked time removed" %}');
-            htmx.ajax('GET', '{% url "appointments:blocked_list" %}', {target: '#main-content-area', swap: 'innerHTML'});
+            htmx.ajax('GET', '{% url "appointments:blocked_list" %}', {target: '#main-content-area', swap: 'innerHTML'},
         } else {
             Alpine.store('ui').error(result.error || '{% trans "Error removing blocked time" %}');
         }

@@ -276,11 +276,11 @@ async function confirmAppointment() {
         const response = await fetch('{% url "appointments:confirm" appointment.id %}', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token }}' }
-        });
+        },
         const data = await response.json();
         if (data.success) {
             Alpine.store('ui').success('{% trans "Appointment confirmed" %}');
-            htmx.ajax('GET', '{% url "appointments:detail" appointment.id %}', {target: '#main-content-area', swap: 'innerHTML'});
+            htmx.ajax('GET', '{% url "appointments:detail" appointment.id %}', {target: '#main-content-area', swap: 'innerHTML'},
         } else {
             Alpine.store('ui').error(data.error || '{% trans "Error confirming appointment" %}');
         }
@@ -294,11 +294,11 @@ async function startAppointment() {
         const response = await fetch('{% url "appointments:start" appointment.id %}', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token }}' }
-        });
+        },
         const data = await response.json();
         if (data.success) {
             Alpine.store('ui').success('{% trans "Appointment started" %}');
-            htmx.ajax('GET', '{% url "appointments:detail" appointment.id %}', {target: '#main-content-area', swap: 'innerHTML'});
+            htmx.ajax('GET', '{% url "appointments:detail" appointment.id %}', {target: '#main-content-area', swap: 'innerHTML'},
         } else {
             Alpine.store('ui').error(data.error || '{% trans "Error starting appointment" %}');
         }
@@ -312,11 +312,11 @@ async function completeAppointment() {
         const response = await fetch('{% url "appointments:complete" appointment.id %}', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token }}' }
-        });
+        },
         const data = await response.json();
         if (data.success) {
             Alpine.store('ui').success('{% trans "Appointment completed" %}');
-            htmx.ajax('GET', '{% url "appointments:detail" appointment.id %}', {target: '#main-content-area', swap: 'innerHTML'});
+            htmx.ajax('GET', '{% url "appointments:detail" appointment.id %}', {target: '#main-content-area', swap: 'innerHTML'},
         } else {
             Alpine.store('ui').error(data.error || '{% trans "Error completing appointment" %}');
         }
@@ -333,11 +333,11 @@ async function cancelAppointment() {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token }}' },
             body: JSON.stringify({ reason: reason || '' })
-        });
+        },
         const data = await response.json();
         if (data.success) {
             Alpine.store('ui').success('{% trans "Appointment cancelled" %}');
-            htmx.ajax('GET', '{% url "appointments:detail" appointment.id %}', {target: '#main-content-area', swap: 'innerHTML'});
+            htmx.ajax('GET', '{% url "appointments:detail" appointment.id %}', {target: '#main-content-area', swap: 'innerHTML'},
         } else {
             Alpine.store('ui').error(data.error || '{% trans "Error cancelling appointment" %}');
         }
@@ -352,11 +352,11 @@ async function markNoShow() {
         const response = await fetch('{% url "appointments:no_show" appointment.id %}', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token }}' }
-        });
+        },
         const data = await response.json();
         if (data.success) {
             Alpine.store('ui').success('{% trans "Marked as no-show" %}');
-            htmx.ajax('GET', '{% url "appointments:detail" appointment.id %}', {target: '#main-content-area', swap: 'innerHTML'});
+            htmx.ajax('GET', '{% url "appointments:detail" appointment.id %}', {target: '#main-content-area', swap: 'innerHTML'},
         } else {
             Alpine.store('ui').error(data.error || '{% trans "Error marking no-show" %}');
         }
@@ -371,11 +371,11 @@ async function deleteAppointment() {
         const response = await fetch('{% url "appointments:delete" appointment.id %}', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token }}' }
-        });
+        },
         const data = await response.json();
         if (data.success) {
             Alpine.store('ui').success('{% trans "Appointment deleted" %}');
-            htmx.ajax('GET', '{% url "appointments:list" %}', {target: '#main-content-area', swap: 'innerHTML'});
+            htmx.ajax('GET', '{% url "appointments:list" %}', {target: '#main-content-area', swap: 'innerHTML'},
             history.pushState({}, '', '{% url "appointments:list" %}');
         } else {
             Alpine.store('ui').error(data.error || '{% trans "Error deleting appointment" %}');

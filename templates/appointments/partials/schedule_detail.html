@@ -2,7 +2,7 @@
 <div data-back-url="{% url 'appointments:schedules' %}" hidden></div>
 
 <script>
-window.addSlotModalState = Alpine.reactive({ open: false, dayOfWeek: null, dayName: '' });
+window.addSlotModalState = Alpine.reactive({ open: false, dayOfWeek: null, dayName: '' },
 
 function editSchedule() {
     const name = prompt('{% trans "Schedule name:" %}', '{{ schedule.name|escapejs }}');
@@ -17,7 +17,7 @@ function editSchedule() {
     .then(data => {
         if (data.success) {
             Alpine.store('ui').success('{% trans "Schedule updated" %}');
-            htmx.ajax('GET', '{% url "appointments:schedule_detail" schedule.id %}', {target: '#main-content-area', swap: 'innerHTML'});
+            htmx.ajax('GET', '{% url "appointments:schedule_detail" schedule.id %}', {target: '#main-content-area', swap: 'innerHTML'},
         } else {
             Alpine.store('ui').error(data.error || '{% trans "Error updating schedule" %}');
         }
@@ -31,11 +31,11 @@ async function deleteSchedule() {
         const response = await fetch('{% url "appointments:schedule_delete" schedule.id %}', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token }}' }
-        });
+        },
         const data = await response.json();
         if (data.success) {
             Alpine.store('ui').success('{% trans "Schedule deleted" %}');
-            htmx.ajax('GET', '{% url "appointments:schedules" %}', {target: '#main-content-area', swap: 'innerHTML'});
+            htmx.ajax('GET', '{% url "appointments:schedules" %}', {target: '#main-content-area', swap: 'innerHTML'},
             history.pushState({}, '', '{% url "appointments:schedules" %}');
         } else {
             Alpine.store('ui').error(data.error || '{% trans "Error deleting schedule" %}');
@@ -57,11 +57,11 @@ async function deleteTimeSlot(slotId) {
         const response = await fetch(`/m/appointments/schedules/slots/${slotId}/delete/`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token }}' }
-        });
+        },
         const result = await response.json();
         if (result.success) {
             Alpine.store('ui').success('{% trans "Time slot deleted" %}');
-            htmx.ajax('GET', '{% url "appointments:schedule_detail" schedule.id %}', {target: '#main-content-area', swap: 'innerHTML'});
+            htmx.ajax('GET', '{% url "appointments:schedule_detail" schedule.id %}', {target: '#main-content-area', swap: 'innerHTML'},
         } else {
             Alpine.store('ui').error(result.error || '{% trans "Error deleting time slot" %}');
         }
@@ -166,11 +166,11 @@ async function deleteTimeSlot(slotId) {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token }}' },
                     body: JSON.stringify({ day_of_week: this.dayOfWeek, start_time: this.startTime, end_time: this.endTime })
-                });
+                },
                 const result = await response.json();
                 if (result.success) {
                     Alpine.store('ui').success('{% trans 'Time slot added' %}');
-                    htmx.ajax('GET', '{% url 'appointments:schedule_detail' schedule.id %}', {target: '#main-content-area', swap: 'innerHTML'});
+                    htmx.ajax('GET', '{% url 'appointments:schedule_detail' schedule.id %}', {target: '#main-content-area', swap: 'innerHTML'},
                 } else {
                     Alpine.store('ui').error(result.error || '{% trans 'Error adding time slot' %}');
                 }

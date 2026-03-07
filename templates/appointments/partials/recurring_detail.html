@@ -158,11 +158,11 @@ async function generateAppointments() {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token }}' },
             body: JSON.stringify({ until_date: untilDate })
-        });
+        },
         const data = await response.json();
         if (data.success) {
             Alpine.store('ui').success(data.count + ' {% trans "appointments generated" %}');
-            htmx.ajax('GET', '{% url "appointments:recurring_detail" recurring.id %}', {target: '#main-content-area', swap: 'innerHTML'});
+            htmx.ajax('GET', '{% url "appointments:recurring_detail" recurring.id %}', {target: '#main-content-area', swap: 'innerHTML'},
         } else {
             Alpine.store('ui').error(data.error || '{% trans "Error generating appointments" %}');
         }
@@ -178,11 +178,11 @@ async function deleteRecurring() {
         const response = await fetch('{% url "appointments:recurring_delete" recurring.id %}', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token }}' }
-        });
+        },
         const data = await response.json();
         if (data.success) {
             Alpine.store('ui').success('{% trans "Recurring appointment deactivated" %}');
-            htmx.ajax('GET', '{% url "appointments:recurring_list" %}', {target: '#main-content-area', swap: 'innerHTML'});
+            htmx.ajax('GET', '{% url "appointments:recurring_list" %}', {target: '#main-content-area', swap: 'innerHTML'},
             history.pushState({}, '', '{% url "appointments:recurring_list" %}');
         } else {
             Alpine.store('ui').error(data.error || '{% trans "Error deactivating" %}');

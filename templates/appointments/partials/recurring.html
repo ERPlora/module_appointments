@@ -53,7 +53,7 @@
 
 <script>
 function addRecurring() {
-    htmx.ajax('GET', '{% url "appointments:recurring_add" %}', {target: '#main-content-area', swap: 'innerHTML'});
+    htmx.ajax('GET', '{% url "appointments:recurring_add" %}', {target: '#main-content-area', swap: 'innerHTML'},
     history.pushState({}, '', '{% url "appointments:recurring_add" %}');
 }
 </script>
